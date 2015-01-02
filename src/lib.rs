@@ -295,12 +295,7 @@ impl Matches {
     }
 
     fn opt_val(&self, nm: &str) -> Option<Optval> {
-        let vals = self.opt_vals(nm);
-        if vals.is_empty() {
-            None
-        } else {
-            Some(vals[0].clone())
-        }
+        self.opt_vals(nm).into_iter().next()
     }
 
     /// Returns true if an option was matched.
