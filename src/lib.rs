@@ -321,13 +321,12 @@ impl Matches {
 
     /// Returns the string argument supplied to one of several matching options or `None`.
     pub fn opts_str(&self, names: &[String]) -> Option<String> {
-        for nm in names.iter() {
+        names.iter().filter_map(|nm| {
             match self.opt_val(nm.as_slice()) {
-                Some(Val(ref s)) => return Some(s.clone()),
-                _ => ()
+                Some(Val(s)) => Some(s),
+                _ => None,
             }
-        }
-        None
+        }).next()
     }
 
     /// Returns a vector of the arguments provided to all matches of the given
