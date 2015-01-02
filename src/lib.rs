@@ -334,15 +334,12 @@ impl Matches {
     ///
     /// Used when an option accepts multiple values.
     pub fn opt_strs(&self, nm: &str) -> Vec<String> {
-        let mut acc: Vec<String> = Vec::new();
-        let r = self.opt_vals(nm);
-        for v in r.iter() {
-            match *v {
-                Val(ref s) => acc.push((*s).clone()),
-                _ => ()
+        self.opt_vals(nm).into_iter().filter_map(|v| {
+            match v {
+                Val(s) => Some(s),
+                _ => None,
             }
-        }
-        acc
+        }).collect()
     }
 
     /// Returns the string argument supplied to a matching option or `None`.
