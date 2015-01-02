@@ -101,7 +101,6 @@ use self::Whitespace::*;
 use self::LengthLimit::*;
 
 use std::fmt;
-use std::result::Result::{Err, Ok};
 use std::result;
 use std::string::String;
 
@@ -951,9 +950,6 @@ mod tests {
     use super::*;
     use super::Fail::*;
 
-    use std::result::Result::{Err, Ok};
-    use std::result;
-
     // Tests for reqopt
     #[test]
     fn test_reqopt() {
@@ -1392,8 +1388,8 @@ mod tests {
         let args_single = vec!("-e".to_string(), "foo".to_string());
         let matches_single = &match getopts(args_single.as_slice(),
                                             opts.as_slice()) {
-          result::Result::Ok(m) => m,
-          result::Result::Err(_) => panic!()
+          Ok(m) => m,
+          Err(_) => panic!()
         };
         assert!(matches_single.opts_present(&["e".to_string()]));
         assert!(matches_single.opts_present(&["encrypt".to_string(), "e".to_string()]));
@@ -1412,8 +1408,8 @@ mod tests {
                              "foo".to_string());
         let matches_both = &match getopts(args_both.as_slice(),
                                           opts.as_slice()) {
-          result::Result::Ok(m) => m,
-          result::Result::Err(_) => panic!()
+          Ok(m) => m,
+          Err(_) => panic!()
         };
         assert!(matches_both.opts_present(&["e".to_string()]));
         assert!(matches_both.opts_present(&["encrypt".to_string()]));
@@ -1437,8 +1433,8 @@ mod tests {
         let opts = vec!(optmulti("L", "", "library directory", "LIB"),
                      optmulti("M", "", "something", "MMMM"));
         let matches = &match getopts(args.as_slice(), opts.as_slice()) {
-          result::Result::Ok(m) => m,
-          result::Result::Err(_) => panic!()
+          Ok(m) => m,
+          Err(_) => panic!()
         };
         assert!(matches.opts_present(&["L".to_string()]));
         assert_eq!(matches.opts_str(&["L".to_string()]).unwrap(), "foo");
@@ -1453,8 +1449,8 @@ mod tests {
         let opts = vec!(optmulti("L", "", "library directory", "LIB"),
                      optflagmulti("v", "verbose", "Verbose"));
         let matches = &match getopts(args.as_slice(), opts.as_slice()) {
-          result::Result::Ok(m) => m,
-          result::Result::Err(e) => panic!( "{}", e )
+          Ok(m) => m,
+          Err(e) => panic!( "{}", e )
         };
         assert!(matches.opts_present(&["L".to_string()]));
         assert_eq!(matches.opts_str(&["L".to_string()]).unwrap(), "verbose");
