@@ -101,7 +101,6 @@ use self::Whitespace::*;
 use self::LengthLimit::*;
 
 use std::fmt;
-use std::result::Result::{Err, Ok};
 use std::result;
 use std::string::String;
 
@@ -295,12 +294,7 @@ impl Matches {
     }
 
     fn opt_val(&self, nm: &str) -> Option<Optval> {
-        let vals = self.opt_vals(nm);
-        if vals.is_empty() {
-            None
-        } else {
-            Some(vals[0].clone())
-        }
+        self.opt_vals(nm).into_iter().next()
     }
 
     /// Returns true if an option was matched.
@@ -315,25 +309,23 @@ impl Matches {
 
     /// Returns true if any of several options were matched.
     pub fn opts_present(&self, names: &[String]) -> bool {
-        for nm in names.iter() {
+        names.iter().any(|nm| {
             match find_opt(self.opts.as_slice(),
                            Name::from_str(nm.as_slice())) {
-                Some(id) if !self.vals[id].is_empty() => return true,
-                _ => (),
-            };
-        }
-        false
+                Some(id) if !self.vals[id].is_empty() => true,
+                _ => false,
+            }
+        })
     }
 
     /// Returns the string argument supplied to one of several matching options or `None`.
     pub fn opts_str(&self, names: &[String]) -> Option<String> {
-        for nm in names.iter() {
+        names.iter().filter_map(|nm| {
             match self.opt_val(nm.as_slice()) {
-                Some(Val(ref s)) => return Some(s.clone()),
-                _ => ()
+                Some(Val(s)) => Some(s),
+                _ => None,
             }
-        }
-        None
+        }).next()
     }
 
     /// Returns a vector of the arguments provided to all matches of the given
@@ -341,26 +333,19 @@ impl Matches {
     ///
     /// Used when an option accepts multiple values.
     pub fn opt_strs(&self, nm: &str) -> Vec<String> {
-        let mut acc: Vec<String> = Vec::new();
-        let r = self.opt_vals(nm);
-        for v in r.iter() {
-            match *v {
-                Val(ref s) => acc.push((*s).clone()),
-                _ => ()
+        self.opt_vals(nm).into_iter().filter_map(|v| {
+            match v {
+                Val(s) => Some(s),
+                _ => None,
             }
-        }
-        acc
+        }).collect()
     }
 
     /// Returns the string argument supplied to a matching option or `None`.
     pub fn opt_str(&self, nm: &str) -> Option<String> {
-        let vals = self.opt_vals(nm);
-        if vals.is_empty() {
-            return None::<String>;
-        }
-        match vals[0] {
-            Val(ref s) => Some((*s).clone()),
-            _ => None
+        match self.opt_val(nm) {
+            Some(Val(s)) => Some(s),
+            _ => None,
         }
     }
 
@@ -371,21 +356,17 @@ impl Matches {
     /// present but no argument was provided, and the argument if the option was
     /// present and an argument was provided.
     pub fn opt_default(&self, nm: &str, def: &str) -> Option<String> {
-        let vals = self.opt_vals(nm);
-        if vals.is_empty() {
-            None
-        } else {
-            match vals[0] {
-                Val(ref s) => Some((*s).clone()),
-                _ => Some(def.to_string())
-            }
+        match self.opt_val(nm) {
+            Some(Val(s)) => Some(s),
+            Some(_) => Some(def.to_string()),
+            None => None,
         }
     }
 
 }
 
 fn is_arg(arg: &str) -> bool {
-    arg.len() > 1 && arg.as_bytes()[0] == b'-'
+    arg.as_bytes().get(0) == Some(&b'-')
 }
 
 fn find_opt(opts: &[Opt], nm: Name) -> Option<uint> {
@@ -969,9 +950,6 @@ mod tests {
     use super::*;
     use super::Fail::*;
 
-    use std::result::Result::{Err, Ok};
-    use std::result;
-
     // Tests for reqopt
     #[test]
     fn test_reqopt() {
@@ -1410,8 +1388,8 @@ mod tests {
         let args_single = vec!("-e".to_string(), "foo".to_string());
         let matches_single = &match getopts(args_single.as_slice(),
                                             opts.as_slice()) {
-          result::Result::Ok(m) => m,
-          result::Result::Err(_) => panic!()
+          Ok(m) => m,
+          Err(_) => panic!()
         };
         assert!(matches_single.opts_present(&["e".to_string()]));
         assert!(matches_single.opts_present(&["encrypt".to_string(), "e".to_string()]));
@@ -1430,8 +1408,8 @@ mod tests {
                              "foo".to_string());
         let matches_both = &match getopts(args_both.as_slice(),
                                           opts.as_slice()) {
-          result::Result::Ok(m) => m,
-          result::Result::Err(_) => panic!()
+          Ok(m) => m,
+          Err(_) => panic!()
         };
         assert!(matches_both.opts_present(&["e".to_string()]));
         assert!(matches_both.opts_present(&["encrypt".to_string()]));
@@ -1455,8 +1433,8 @@ mod tests {
         let opts = vec!(optmulti("L", "", "library directory", "LIB"),
                      optmulti("M", "", "something", "MMMM"));
         let matches = &match getopts(args.as_slice(), opts.as_slice()) {
-          result::Result::Ok(m) => m,
-          result::Result::Err(_) => panic!()
+          Ok(m) => m,
+          Err(_) => panic!()
         };
         assert!(matches.opts_present(&["L".to_string()]));
         assert_eq!(matches.opts_str(&["L".to_string()]).unwrap(), "foo");
@@ -1471,8 +1449,8 @@ mod tests {
         let opts = vec!(optmulti("L", "", "library directory", "LIB"),
                      optflagmulti("v", "verbose", "Verbose"));
         let matches = &match getopts(args.as_slice(), opts.as_slice()) {
-          result::Result::Ok(m) => m,
-          result::Result::Err(e) => panic!( "{}", e )
+          Ok(m) => m,
+          Err(e) => panic!( "{}", e )
         };
         assert!(matches.opts_present(&["L".to_string()]));
         assert_eq!(matches.opts_str(&["L".to_string()]).unwrap(), "verbose");
