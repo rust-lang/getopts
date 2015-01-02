@@ -310,14 +310,13 @@ impl Matches {
 
     /// Returns true if any of several options were matched.
     pub fn opts_present(&self, names: &[String]) -> bool {
-        for nm in names.iter() {
+        names.iter().any(|nm| {
             match find_opt(self.opts.as_slice(),
                            Name::from_str(nm.as_slice())) {
-                Some(id) if !self.vals[id].is_empty() => return true,
-                _ => (),
-            };
-        }
-        false
+                Some(id) if !self.vals[id].is_empty() => true,
+                _ => false,
+            }
+        })
     }
 
     /// Returns the string argument supplied to one of several matching options or `None`.
