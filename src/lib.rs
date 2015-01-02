@@ -357,14 +357,10 @@ impl Matches {
     /// present but no argument was provided, and the argument if the option was
     /// present and an argument was provided.
     pub fn opt_default(&self, nm: &str, def: &str) -> Option<String> {
-        let vals = self.opt_vals(nm);
-        if vals.is_empty() {
-            None
-        } else {
-            match vals[0] {
-                Val(ref s) => Some((*s).clone()),
-                _ => Some(def.to_string())
-            }
+        match self.opt_val(nm) {
+            Some(Val(s)) => Some(s),
+            Some(_) => Some(def.to_string()),
+            None => None,
         }
     }
 
