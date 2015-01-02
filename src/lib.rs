@@ -367,7 +367,7 @@ impl Matches {
 }
 
 fn is_arg(arg: &str) -> bool {
-    arg.len() > 1 && arg.as_bytes()[0] == b'-'
+    arg.as_bytes().get(0) == Some(&b'-')
 }
 
 fn find_opt(opts: &[Opt], nm: Name) -> Option<uint> {
