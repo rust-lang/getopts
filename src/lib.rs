@@ -344,13 +344,9 @@ impl Matches {
 
     /// Returns the string argument supplied to a matching option or `None`.
     pub fn opt_str(&self, nm: &str) -> Option<String> {
-        let vals = self.opt_vals(nm);
-        if vals.is_empty() {
-            return None::<String>;
-        }
-        match vals[0] {
-            Val(ref s) => Some((*s).clone()),
-            _ => None
+        match self.opt_val(nm) {
+            Some(Val(s)) => Some(s),
+            _ => None,
         }
     }
 
