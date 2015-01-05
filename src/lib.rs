@@ -101,11 +101,11 @@ use self::Whitespace::*;
 use self::LengthLimit::*;
 
 use std::fmt;
+use std::iter::repeat;
 use std::result;
-use std::string::String;
 
 /// Name of an option. Either a string or a single char.
-#[deriving(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Name {
     /// A string representing the long name of an option.
     /// For example: "help"
@@ -116,7 +116,7 @@ pub enum Name {
 }
 
 /// Describes whether an option has an argument.
-#[deriving(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum HasArg {
     /// The option requires an argument.
     Yes,
@@ -129,7 +129,7 @@ pub enum HasArg {
 impl Copy for HasArg {}
 
 /// Describes how often an option may occur.
-#[deriving(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Occur {
     /// The option occurs once.
     Req,
@@ -142,7 +142,7 @@ pub enum Occur {
 impl Copy for Occur {}
 
 /// A description of a possible option.
-#[deriving(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Opt {
     /// Name of the option
     pub name: Name,
@@ -156,7 +156,7 @@ pub struct Opt {
 
 /// One group of options, e.g., both `-h` and `--help`, along with
 /// their shared description and properties.
-#[deriving(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct OptGroup {
     /// Short name of the option, e.g. `h` for a `-h` option
     pub short_name: String,
@@ -173,7 +173,7 @@ pub struct OptGroup {
 }
 
 /// Describes whether an option is given at all or has a value.
-#[deriving(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 enum Optval {
     Val(String),
     Given,
@@ -181,7 +181,7 @@ enum Optval {
 
 /// The result of checking command line arguments. Contains a vector
 /// of matches and a vector of free strings.
-#[deriving(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Matches {
     /// Options that matched
     opts: Vec<Opt>,
@@ -194,7 +194,7 @@ pub struct Matches {
 /// The type returned when the command line does not conform to the
 /// expected format. Use the `Show` implementation to output detailed
 /// information.
-#[deriving(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum Fail {
     /// The option requires an argument but none was passed.
     ArgumentMissing(String),
@@ -209,7 +209,7 @@ pub enum Fail {
 }
 
 /// The type of failure that occurred.
-#[deriving(PartialEq, Eq)]
+#[derive(PartialEq, Eq)]
 #[allow(missing_docs)]
 pub enum FailType {
     ArgumentMissing_,
@@ -567,7 +567,7 @@ pub fn getopts(args: &[String], optgrps: &[OptGroup]) -> Result {
 
     fn f(_x: uint) -> Vec<Optval> { return Vec::new(); }
 
-    let mut vals = Vec::from_fn(n_opts, f);
+    let mut vals = range(0, n_opts).map(f).collect::<Vec<_>>();
     let mut free: Vec<String> = Vec::new();
     let l = args.len();
     let mut i = 0;
@@ -689,7 +689,7 @@ pub fn getopts(args: &[String], optgrps: &[OptGroup]) -> Result {
 /// Derive a usage message from a set of long options.
 pub fn usage(brief: &str, opts: &[OptGroup]) -> String {
 
-    let desc_sep = format!("\n{}", " ".repeat(24));
+    let desc_sep = format!("\n{}", repeat(" ").take(24).collect::<String>());
 
     let rows = opts.iter().map(|optref| {
         let OptGroup{short_name,
@@ -699,7 +699,7 @@ pub fn usage(brief: &str, opts: &[OptGroup]) -> String {
                      hasarg,
                      ..} = (*optref).clone();
 
-        let mut row = " ".repeat(4);
+        let mut row = "    ".to_string();
 
         // short option
         match short_name.len() {
@@ -735,7 +735,7 @@ pub fn usage(brief: &str, opts: &[OptGroup]) -> String {
 
         // FIXME: #5516 should be graphemes not codepoints
         // here we just need to indent the start of the description
-        let rowlen = row.char_len();
+        let rowlen = row.chars().count();
         if rowlen < 24 {
             for _ in range(0, 24 - rowlen) {
                 row.push(' ');
