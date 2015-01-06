@@ -848,8 +848,8 @@ impl Copy for LengthLimit {}
 ///
 /// Panics during iteration if the string contains a non-whitespace
 /// sequence longer than the limit.
-fn each_split_within<'a>(ss: &'a str, lim: uint, it: |&'a str| -> bool)
-                     -> bool {
+fn each_split_within<'a, F>(ss: &'a str, lim: uint, mut it: F)
+                            -> bool where F: FnMut(&'a str) -> bool {
     // Just for fun, let's write this as a state machine:
 
     let mut slice_start = 0;
@@ -866,7 +866,7 @@ fn each_split_within<'a>(ss: &'a str, lim: uint, it: |&'a str| -> bool)
         lim = fake_i;
     }
 
-    let machine: |&mut bool, (uint, char)| -> bool = |cont, (i, c)| {
+    let mut machine = |&mut: cont: &mut bool, (i, c): (uint, char)| {
         let whitespace = if c.is_whitespace() { Ws }       else { Cr };
         let limit      = if (i - slice_start + 1) <= lim  { UnderLim } else { OverLim };
 
