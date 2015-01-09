@@ -32,6 +32,7 @@
 //! file name following `-o`, and accepts both `-h` and `--help` as optional flags.
 //!
 //! ```{.rust}
+//! # #![allow(unstable)]
 //! extern crate getopts;
 //! use getopts::{optopt,optflag,getopts,OptGroup,usage};
 //! use std::os;
@@ -81,6 +82,7 @@
        html_favicon_url = "http://www.rust-lang.org/favicon.ico",
        html_root_url = "http://doc.rust-lang.org/getopts/")]
 #![deny(missing_docs)]
+#![allow(unstable)]
 
 #[cfg(test)] #[macro_use] extern crate log;
 
@@ -187,7 +189,7 @@ pub struct Matches {
 /// The type returned when the command line does not conform to the
 /// expected format. Use the `Show` implementation to output detailed
 /// information.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Show)]
 pub enum Fail {
     /// The option requires an argument but none was passed.
     ArgumentMissing(String),
@@ -219,8 +221,8 @@ pub type Result = result::Result<Matches, Fail>;
 
 impl Name {
     fn from_str(nm: &str) -> Name {
-        if nm.len() == 1u {
-            Short(nm.char_at(0u))
+        if nm.len() == 1 {
+            Short(nm.char_at(0))
         } else {
             Long(nm.to_string())
         }
@@ -296,7 +298,7 @@ impl Matches {
     }
 
     /// Returns the number of times an option was matched.
-    pub fn opt_count(&self, nm: &str) -> uint {
+    pub fn opt_count(&self, nm: &str) -> usize {
         self.opt_vals(nm).len()
     }
 
@@ -362,7 +364,7 @@ fn is_arg(arg: &str) -> bool {
     arg.as_bytes().get(0) == Some(&b'-')
 }
 
-fn find_opt(opts: &[Opt], nm: Name) -> Option<uint> {
+fn find_opt(opts: &[Opt], nm: Name) -> Option<usize> {
     // Search main options.
     let pos = opts.iter().position(|opt| opt.name == nm);
     if pos.is_some() {
@@ -524,7 +526,7 @@ impl Fail {
     }
 }
 
-impl fmt::Show for Fail {
+impl fmt::String for Fail {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ArgumentMissing(ref nm) => {
@@ -558,7 +560,7 @@ pub fn getopts(args: &[String], optgrps: &[OptGroup]) -> Result {
     let opts: Vec<Opt> = optgrps.iter().map(|x| x.long_to_short()).collect();
     let n_opts = opts.len();
 
-    fn f(_x: uint) -> Vec<Optval> { return Vec::new(); }
+    fn f(_x: usize) -> Vec<Optval> { return Vec::new(); }
 
     let mut vals = range(0, n_opts).map(f).collect::<Vec<_>>();
     let mut free: Vec<String> = Vec::new();
@@ -662,7 +664,7 @@ pub fn getopts(args: &[String], optgrps: &[OptGroup]) -> Result {
         }
         i += 1;
     }
-    for i in range(0u, n_opts) {
+    for i in range(0, n_opts) {
         let n = vals[i].len();
         let occ = opts[i].occur;
         if occ == Req && n == 0 {
@@ -841,7 +843,7 @@ impl Copy for LengthLimit {}
 ///
 /// Panics during iteration if the string contains a non-whitespace
 /// sequence longer than the limit.
-fn each_split_within<'a, F>(ss: &'a str, lim: uint, mut it: F)
+fn each_split_within<'a, F>(ss: &'a str, lim: usize, mut it: F)
                             -> bool where F: FnMut(&'a str) -> bool {
     // Just for fun, let's write this as a state machine:
 
@@ -859,7 +861,7 @@ fn each_split_within<'a, F>(ss: &'a str, lim: uint, mut it: F)
         lim = fake_i;
     }
 
-    let mut machine = |&mut: cont: &mut bool, (i, c): (uint, char)| {
+    let mut machine = |&mut: cont: &mut bool, (i, c): (usize, char)| {
         let whitespace = if c.is_whitespace() { Ws }       else { Cr };
         let limit      = if (i - slice_start + 1) <= lim  { UnderLim } else { OverLim };
 
@@ -921,7 +923,7 @@ fn each_split_within<'a, F>(ss: &'a str, lim: uint, mut it: F)
 
 #[test]
 fn test_split_within() {
-    fn t(s: &str, i: uint, u: &[String]) {
+    fn t(s: &str, i: usize, u: &[String]) {
         let mut v = Vec::new();
         each_split_within(s, i, |s| { v.push(s.to_string()); true });
         assert!(v.iter().zip(u.iter()).all(|(a,b)| a == b));
@@ -934,7 +936,7 @@ fn test_split_within() {
         "little lamb".to_string(),
         "Little lamb".to_string()
     ]);
-    t("\nMary had a little lamb\nLittle lamb\n", ::std::uint::MAX,
+    t("\nMary had a little lamb\nLittle lamb\n", ::std::usize::MAX,
         &["Mary had a little lamb\nLittle lamb".to_string()]);
 }
 
