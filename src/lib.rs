@@ -570,7 +570,8 @@ pub fn getopts(args: &[String], optgrps: &[OptGroup]) -> Result {
         let cur = args[i].clone();
         let curlen = cur.len();
         if !is_arg(cur.as_slice()) {
-            free.push(cur);
+            while i < l { free.push(args[i].clone()); i += 1; }
+            break;
         } else if cur == "--" {
             let mut j = i + 1;
             while j < l { free.push(args[j].clone()); j += 1; }
@@ -1328,11 +1329,8 @@ mod tests {
     #[test]
     fn test_combined() {
         let args =
-            vec!("prog".to_string(),
-                 "free1".to_string(),
-                 "-s".to_string(),
+            vec!("-s".to_string(),
                  "20".to_string(),
-                 "free2".to_string(),
                  "--flag".to_string(),
                  "--long=30".to_string(),
                  "-f".to_string(),
@@ -1355,10 +1353,7 @@ mod tests {
         let rs = getopts(args.as_slice(), opts.as_slice());
         match rs {
           Ok(ref m) => {
-            assert!(m.free[0] == "prog");
-            assert!(m.free[1] == "free1");
             assert_eq!(m.opt_str("s").unwrap(), "20");
-            assert!(m.free[2] == "free2");
             assert!((m.opt_present("flag")));
             assert_eq!(m.opt_str("long").unwrap(), "30");
             assert!((m.opt_present("f")));
@@ -1369,6 +1364,31 @@ mod tests {
             assert!(pair[0] == "-A B");
             assert!(pair[1] == "-60 70");
             assert!((!m.opt_present("notpresent")));
+          }
+          _ => panic!()
+        }
+    }
+
+    #[test]
+    fn test_mixed() {
+        let args =
+            vec!("-a".to_string(),
+                 "b".to_string(),
+                 "-c".to_string(),
+                 "d".to_string());
+        let opts =
+            vec!(optflag("a", "", ""),
+              optopt("c", "", "", ""));
+        let rs = getopts(args.as_slice(), opts.as_slice());
+        match rs {
+          Ok(ref m) => {
+            println!("{}", m.opt_present("c"));
+            assert!(m.opt_present("a"));
+            assert!(!m.opt_present("c"));
+            assert_eq!(m.free.len(), 3);
+            assert_eq!(m.free[0], "b");
+            assert_eq!(m.free[1], "-c");
+            assert_eq!(m.free[2], "d");
           }
           _ => panic!()
         }
