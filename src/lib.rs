@@ -366,7 +366,7 @@ impl Options {
 
 /// Name of an option. Either a string or a single char.
 #[derive(Clone, PartialEq, Eq)]
-pub enum Name {
+enum Name {
     /// A string representing the long name of an option.
     /// For example: "help"
     Long(String),
@@ -403,33 +403,33 @@ impl Copy for Occur {}
 
 /// A description of a possible option.
 #[derive(Clone, PartialEq, Eq)]
-pub struct Opt {
+struct Opt {
     /// Name of the option
-    pub name: Name,
+    name: Name,
     /// Whether it has an argument
-    pub hasarg: HasArg,
+    hasarg: HasArg,
     /// How often it can occur
-    pub occur: Occur,
+    occur: Occur,
     /// Which options it aliases
-    pub aliases: Vec<Opt>,
+    aliases: Vec<Opt>,
 }
 
 /// One group of options, e.g., both `-h` and `--help`, along with
 /// their shared description and properties.
 #[derive(Clone, PartialEq, Eq)]
-pub struct OptGroup {
+struct OptGroup {
     /// Short name of the option, e.g. `h` for a `-h` option
-    pub short_name: String,
+    short_name: String,
     /// Long name of the option, e.g. `help` for a `--help` option
-    pub long_name: String,
+    long_name: String,
     /// Hint for argument, e.g. `FILE` for a `-o FILE` option
-    pub hint: String,
+    hint: String,
     /// Description for usage help text
-    pub desc: String,
+    desc: String,
     /// Whether option has an argument
-    pub hasarg: HasArg,
+    hasarg: HasArg,
     /// How often it can occur
-    pub occur: Occur
+    occur: Occur
 }
 
 /// Describes whether an option is given at all or has a value.
@@ -504,7 +504,7 @@ impl Name {
 impl OptGroup {
     /// Translate OptGroup into Opt.
     /// (Both short and long names correspond to different Opts).
-    pub fn long_to_short(&self) -> Opt {
+    fn long_to_short(&self) -> Opt {
         let OptGroup {
             short_name,
             long_name,
@@ -966,7 +966,7 @@ fn test_split_within() {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::{HasArg, Name, Occur, Opt, Options};
     use super::Fail::*;
 
     // Tests for reqopt
