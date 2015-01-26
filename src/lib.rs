@@ -57,7 +57,7 @@
 //!     let mut opts = Options::new();
 //!     opts.add_optopt("o", "", "set output file name", "NAME");
 //!     opts.add_optflag("h", "help", "print this help menu");
-//!     let matches = match opts.parse_freely(args.tail()) {
+//!     let matches = match opts.parse(args.tail()) {
 //!         Ok(m) => { m }
 //!         Err(f) => { panic!(f.to_string()) }
 //!     };
@@ -264,7 +264,7 @@ impl Options {
     ///
     /// Returns `Err(Fail)` on failure: use the `Show` implementation of `Fail` to display
     /// information about it.
-    pub fn parse_freely(&self, args: &[String]) -> Result {
+    pub fn parse(&self, args: &[String]) -> Result {
         getopts(args, self.grps.as_slice())
     }
 
@@ -975,7 +975,7 @@ mod tests {
         let long_args = vec!("--test=20".to_string());
         let mut opts = Options::new();
         opts.add_reqopt("t", "test", "testing", "TEST");
-        match opts.parse_freely(long_args.as_slice()) {
+        match opts.parse(long_args.as_slice()) {
           Ok(ref m) => {
             assert!(m.opt_present("test"));
             assert_eq!(m.opt_str("test").unwrap(), "20");
@@ -985,7 +985,7 @@ mod tests {
           _ => { panic!("test_reqopt failed (long arg)"); }
         }
         let short_args = vec!("-t".to_string(), "20".to_string());
-        match opts.parse_freely(short_args.as_slice()) {
+        match opts.parse(short_args.as_slice()) {
           Ok(ref m) => {
             assert!((m.opt_present("test")));
             assert_eq!(m.opt_str("test").unwrap(), "20");
@@ -1001,7 +1001,7 @@ mod tests {
         let args = vec!("blah".to_string());
         match Options::new()
                       .add_reqopt("t", "test", "testing", "TEST")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Err(OptionMissing(_)) => {},
           _ => panic!()
         }
@@ -1012,12 +1012,12 @@ mod tests {
         let long_args = vec!("--test".to_string());
         let mut opts = Options::new();
         opts.add_reqopt("t", "test", "testing", "TEST");
-        match opts.parse_freely(long_args.as_slice()) {
+        match opts.parse(long_args.as_slice()) {
           Err(ArgumentMissing(_)) => {},
           _ => panic!()
         }
         let short_args = vec!("-t".to_string());
-        match opts.parse_freely(short_args.as_slice()) {
+        match opts.parse(short_args.as_slice()) {
           Err(ArgumentMissing(_)) => {},
           _ => panic!()
         }
@@ -1028,7 +1028,7 @@ mod tests {
         let args = vec!("--test=20".to_string(), "-t".to_string(), "30".to_string());
         match Options::new()
                       .add_reqopt("t", "test", "testing", "TEST")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Err(OptionDuplicated(_)) => {},
           _ => panic!()
         }
@@ -1040,7 +1040,7 @@ mod tests {
         let long_args = vec!("--test=20".to_string());
         let mut opts = Options::new();
         opts.add_optopt("t", "test", "testing", "TEST");
-        match opts.parse_freely(long_args.as_slice()) {
+        match opts.parse(long_args.as_slice()) {
           Ok(ref m) => {
             assert!(m.opt_present("test"));
             assert_eq!(m.opt_str("test").unwrap(), "20");
@@ -1050,7 +1050,7 @@ mod tests {
           _ => panic!()
         }
         let short_args = vec!("-t".to_string(), "20".to_string());
-        match opts.parse_freely(short_args.as_slice()) {
+        match opts.parse(short_args.as_slice()) {
           Ok(ref m) => {
             assert!((m.opt_present("test")));
             assert_eq!(m.opt_str("test").unwrap(), "20");
@@ -1066,7 +1066,7 @@ mod tests {
         let args = vec!("blah".to_string());
         match Options::new()
                       .add_optopt("t", "test", "testing", "TEST")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
@@ -1080,12 +1080,12 @@ mod tests {
         let long_args = vec!("--test".to_string());
         let mut opts = Options::new();
         opts.add_optopt("t", "test", "testing", "TEST");
-        match opts.parse_freely(long_args.as_slice()) {
+        match opts.parse(long_args.as_slice()) {
           Err(ArgumentMissing(_)) => {},
           _ => panic!()
         }
         let short_args = vec!("-t".to_string());
-        match opts.parse_freely(short_args.as_slice()) {
+        match opts.parse(short_args.as_slice()) {
           Err(ArgumentMissing(_)) => {},
           _ => panic!()
         }
@@ -1096,7 +1096,7 @@ mod tests {
         let args = vec!("--test=20".to_string(), "-t".to_string(), "30".to_string());
         match Options::new()
                       .add_optopt("t", "test", "testing", "TEST")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Err(OptionDuplicated(_)) => {},
           _ => panic!()
         }
@@ -1108,7 +1108,7 @@ mod tests {
         let long_args = vec!("--test".to_string());
         let mut opts = Options::new();
         opts.add_optflag("t", "test", "testing");
-        match opts.parse_freely(long_args.as_slice()) {
+        match opts.parse(long_args.as_slice()) {
           Ok(ref m) => {
             assert!(m.opt_present("test"));
             assert!(m.opt_present("t"));
@@ -1116,7 +1116,7 @@ mod tests {
           _ => panic!()
         }
         let short_args = vec!("-t".to_string());
-        match opts.parse_freely(short_args.as_slice()) {
+        match opts.parse(short_args.as_slice()) {
           Ok(ref m) => {
             assert!(m.opt_present("test"));
             assert!(m.opt_present("t"));
@@ -1130,7 +1130,7 @@ mod tests {
         let args = vec!("blah".to_string());
         match Options::new()
                       .add_optflag("t", "test", "testing")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
@@ -1144,7 +1144,7 @@ mod tests {
         let args = vec!("--test=20".to_string());
         match Options::new()
                       .add_optflag("t", "test", "testing")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Err(UnexpectedArgument(_)) => {},
           _ => panic!()
         }
@@ -1155,7 +1155,7 @@ mod tests {
         let args = vec!("--test".to_string(), "-t".to_string());
         match Options::new()
                       .add_optflag("t", "test", "testing")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Err(OptionDuplicated(_)) => {},
           _ => panic!()
         }
@@ -1166,7 +1166,7 @@ mod tests {
         let args = vec!("-t".to_string(), "20".to_string());
         match Options::new()
                       .add_optflag("t", "test", "testing")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
             // The next variable after the flag is just a free argument
 
@@ -1182,7 +1182,7 @@ mod tests {
         let args = vec!("-v".to_string());
         match Options::new()
                       .add_optflagmulti("v", "verbose", "verbosity")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
             assert_eq!(m.opt_count("v"), 1);
           }
@@ -1195,7 +1195,7 @@ mod tests {
         let args = vec!("-v".to_string(), "-v".to_string());
         match Options::new()
                       .add_optflagmulti("v", "verbose", "verbosity")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
             assert_eq!(m.opt_count("v"), 2);
           }
@@ -1208,7 +1208,7 @@ mod tests {
         let args = vec!("-vv".to_string());
         match Options::new()
                       .add_optflagmulti("v", "verbose", "verbosity")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
             assert_eq!(m.opt_count("v"), 2);
           }
@@ -1221,7 +1221,7 @@ mod tests {
         let args = vec!("--verbose".to_string());
         match Options::new()
                       .add_optflagmulti("v", "verbose", "verbosity")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
             assert_eq!(m.opt_count("verbose"), 1);
           }
@@ -1234,7 +1234,7 @@ mod tests {
         let args = vec!("--verbose".to_string(), "--verbose".to_string());
         match Options::new()
                       .add_optflagmulti("v", "verbose", "verbosity")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
             assert_eq!(m.opt_count("verbose"), 2);
           }
@@ -1248,7 +1248,7 @@ mod tests {
                         "-vv".to_string(), "verbose".to_string());
         match Options::new()
                       .add_optflagmulti("v", "verbose", "verbosity")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
             assert_eq!(m.opt_count("verbose"), 4);
             assert_eq!(m.opt_count("v"), 4);
@@ -1263,7 +1263,7 @@ mod tests {
         let long_args = vec!("--test".to_string());
         let mut opts = Options::new();
         opts.add_optflag("t", "test", "testing");
-        match opts.parse_freely(long_args.as_slice()) {
+        match opts.parse(long_args.as_slice()) {
           Ok(ref m) => {
             assert!(m.opt_present("test"));
             assert!(m.opt_present("t"));
@@ -1271,7 +1271,7 @@ mod tests {
           _ => panic!()
         }
         let short_args = vec!("-t".to_string());
-        match opts.parse_freely(short_args.as_slice()) {
+        match opts.parse(short_args.as_slice()) {
           Ok(ref m) => {
             assert!(m.opt_present("test"));
             assert!(m.opt_present("t"));
@@ -1279,7 +1279,7 @@ mod tests {
           _ => panic!()
         }
         let no_args = vec!();
-        match opts.parse_freely(no_args.as_slice()) {
+        match opts.parse(no_args.as_slice()) {
           Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
@@ -1294,7 +1294,7 @@ mod tests {
         let long_args = vec!("--test=20".to_string());
         let mut opts = Options::new();
         opts.add_optmulti("t", "test", "testing", "TEST");
-        match opts.parse_freely(long_args.as_slice()) {
+        match opts.parse(long_args.as_slice()) {
           Ok(ref m) => {
             assert!((m.opt_present("test")));
             assert_eq!(m.opt_str("test").unwrap(), "20");
@@ -1304,7 +1304,7 @@ mod tests {
           _ => panic!()
         }
         let short_args = vec!("-t".to_string(), "20".to_string());
-        match opts.parse_freely(short_args.as_slice()) {
+        match opts.parse(short_args.as_slice()) {
           Ok(ref m) => {
             assert!((m.opt_present("test")));
             assert_eq!(m.opt_str("test").unwrap(), "20");
@@ -1320,7 +1320,7 @@ mod tests {
         let args = vec!("blah".to_string());
         match Options::new()
                       .add_optmulti("t", "test", "testing", "TEST")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
@@ -1334,12 +1334,12 @@ mod tests {
         let long_args = vec!("--test".to_string());
         let mut opts = Options::new();
         opts.add_optmulti("t", "test", "testing", "TEST");
-        match opts.parse_freely(long_args.as_slice()) {
+        match opts.parse(long_args.as_slice()) {
           Err(ArgumentMissing(_)) => {},
           _ => panic!()
         }
         let short_args = vec!("-t".to_string());
-        match opts.parse_freely(short_args.as_slice()) {
+        match opts.parse(short_args.as_slice()) {
           Err(ArgumentMissing(_)) => {},
           _ => panic!()
         }
@@ -1350,7 +1350,7 @@ mod tests {
         let args = vec!("--test=20".to_string(), "-t".to_string(), "30".to_string());
         match Options::new()
                       .add_optmulti("t", "test", "testing", "TEST")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
               assert!(m.opt_present("test"));
               assert_eq!(m.opt_str("test").unwrap(), "20");
@@ -1369,12 +1369,12 @@ mod tests {
         let long_args = vec!("--untest".to_string());
         let mut opts = Options::new();
         opts.add_optmulti("t", "test", "testing", "TEST");
-        match opts.parse_freely(long_args.as_slice()) {
+        match opts.parse(long_args.as_slice()) {
           Err(UnrecognizedOption(_)) => {},
           _ => panic!()
         }
         let short_args = vec!("-u".to_string());
-        match opts.parse_freely(short_args.as_slice()) {
+        match opts.parse(short_args.as_slice()) {
           Err(UnrecognizedOption(_)) => {},
           _ => panic!()
         }
@@ -1407,7 +1407,7 @@ mod tests {
                       .add_optmulti("m", "", "mmmmmm", "YUM")
                       .add_optmulti("n", "", "nothing", "NOTHING")
                       .add_optopt("", "notpresent", "nothing to see here", "NOPE")
-                      .parse_freely(args.as_slice()) {
+                      .parse(args.as_slice()) {
           Ok(ref m) => {
             assert!(m.free[0] == "prog");
             assert!(m.free[1] == "free1");
@@ -1436,7 +1436,7 @@ mod tests {
         opts.add_optopt("f", "", "flag", "FLAG");
 
         let args_single = vec!("-e".to_string(), "foo".to_string());
-        let matches_single = &match opts.parse_freely(args_single.as_slice()) {
+        let matches_single = &match opts.parse(args_single.as_slice()) {
           Ok(m) => m,
           Err(_) => panic!()
         };
@@ -1455,7 +1455,7 @@ mod tests {
 
         let args_both = vec!("-e".to_string(), "foo".to_string(), "--encrypt".to_string(),
                              "foo".to_string());
-        let matches_both = &match opts.parse_freely(args_both.as_slice()) {
+        let matches_both = &match opts.parse(args_both.as_slice()) {
           Ok(m) => m,
           Err(_) => panic!()
         };
@@ -1481,7 +1481,7 @@ mod tests {
         let matches = &match Options::new()
                                      .add_optmulti("L", "", "library directory", "LIB")
                                      .add_optmulti("M", "", "something", "MMMM")
-                                     .parse_freely(args.as_slice()) {
+                                     .parse(args.as_slice()) {
           Ok(m) => m,
           Err(_) => panic!()
         };
@@ -1498,7 +1498,7 @@ mod tests {
         let matches = &match Options::new()
                                      .add_optmulti("L", "", "library directory", "LIB")
                                      .add_optflagmulti("v", "verbose", "Verbose")
-                                     .parse_freely(args.as_slice()) {
+                                     .parse(args.as_slice()) {
           Ok(m) => m,
           Err(e) => panic!( "{}", e )
         };
@@ -1532,7 +1532,7 @@ mod tests {
 
         let matches = Options::new()
                               .add_optflagmulti("a", "apple", "Desc")
-                              .parse_freely(args.as_slice())
+                              .parse(args.as_slice())
                               .unwrap();
         assert_eq!(3, matches.opt_count("a"));
         assert_eq!(3, matches.opt_count("apple"));
