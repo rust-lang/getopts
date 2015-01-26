@@ -111,8 +111,8 @@ impl Options {
     }
 
     /// Create a generic option group, stating all parameters explicitly
-    pub fn opt<'a>(&'a mut self, short_name: &str, long_name: &str, desc: &str,
-                       hint: &str, hasarg: HasArg, occur: Occur) -> &'a mut Options {
+    pub fn opt(&mut self, short_name: &str, long_name: &str, desc: &str,
+                       hint: &str, hasarg: HasArg, occur: Occur) -> &mut Options {
         let len = short_name.len();
         assert!(len == 1 || len == 0);
         self.grps.push(OptGroup {
@@ -131,8 +131,8 @@ impl Options {
     /// * `short_name` - e.g. `"h"` for a `-h` option, or `""` for none
     /// * `long_name` - e.g. `"help"` for a `--help` option, or `""` for none
     /// * `desc` - Description for usage help
-    pub fn optflag<'a>(&'a mut self, short_name: &str, long_name: &str, desc: &str)
-                           -> &'a mut Options {
+    pub fn optflag(&mut self, short_name: &str, long_name: &str, desc: &str)
+                           -> &mut Options {
         let len = short_name.len();
         assert!(len == 1 || len == 0);
         self.grps.push(OptGroup {
@@ -152,8 +152,8 @@ impl Options {
     /// * `short_name` - e.g. `"h"` for a `-h` option, or `""` for none
     /// * `long_name` - e.g. `"help"` for a `--help` option, or `""` for none
     /// * `desc` - Description for usage help
-    pub fn optflagmulti<'a>(&'a mut self, short_name: &str, long_name: &str, desc: &str)
-                                -> &'a mut Options {
+    pub fn optflagmulti(&mut self, short_name: &str, long_name: &str, desc: &str)
+                                -> &mut Options {
         let len = short_name.len();
         assert!(len == 1 || len == 0);
         self.grps.push(OptGroup {
@@ -174,8 +174,8 @@ impl Options {
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
-    pub fn optflagopt<'a>(&'a mut self, short_name: &str, long_name: &str, desc: &str,
-                              hint: &str) -> &'a mut Options {
+    pub fn optflagopt(&mut self, short_name: &str, long_name: &str, desc: &str,
+                              hint: &str) -> &mut Options {
         let len = short_name.len();
         assert!(len == 1 || len == 0);
         self.grps.push(OptGroup {
@@ -197,8 +197,8 @@ impl Options {
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
-    pub fn optmulti<'a>(&'a mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
-                            -> &'a mut Options {
+    pub fn optmulti(&mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
+                            -> &mut Options {
         let len = short_name.len();
         assert!(len == 1 || len == 0);
         self.grps.push(OptGroup {
@@ -219,8 +219,8 @@ impl Options {
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
-    pub fn optopt<'a>(&'a mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
-                          -> &'a mut Options {
+    pub fn optopt(&mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
+                          -> &mut Options {
         let len = short_name.len();
         assert!(len == 1 || len == 0);
         self.grps.push(OptGroup {
@@ -241,8 +241,8 @@ impl Options {
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
-    pub fn reqopt<'a>(&'a mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
-                          -> &'a mut Options {
+    pub fn reqopt(&mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
+                          -> &mut Options {
         let len = short_name.len();
         assert!(len == 1 || len == 0);
         self.grps.push(OptGroup {
