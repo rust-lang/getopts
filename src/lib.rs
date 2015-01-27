@@ -81,6 +81,7 @@
        html_root_url = "http://doc.rust-lang.org/getopts/")]
 #![deny(missing_docs)]
 #![allow(unstable)]
+#![cfg_attr(test, deny(warnings))]
 
 #[cfg(test)] #[macro_use] extern crate log;
 
@@ -654,7 +655,7 @@ impl Fail {
     }
 }
 
-impl fmt::String for Fail {
+impl fmt::Display for Fail {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ArgumentMissing(ref nm) => {
@@ -699,7 +700,7 @@ fn getopts(args: &[String], optgrps: &[OptGroup]) -> Result {
             let mut names;
             let mut i_arg = None;
             if cur.as_bytes()[1] == b'-' {
-                let tail = cur.slice(2, curlen);
+                let tail = &cur[2..curlen];
                 let tail_eq: Vec<&str> = tail.split('=').collect();
                 if tail_eq.len() <= 1 {
                     names = vec!(Long(tail.to_string()));
@@ -735,7 +736,7 @@ fn getopts(args: &[String], optgrps: &[OptGroup]) -> Result {
                     };
 
                     if arg_follows && range.next < curlen {
-                        i_arg = Some(cur.slice(range.next, curlen).to_string());
+                        i_arg = Some(cur[range.next..curlen].to_string());
                         break;
                     }
 
@@ -896,9 +897,9 @@ fn each_split_within<'a, F>(ss: &'a str, lim: usize, mut it: F)
             (B, Cr, UnderLim) => { B }
             (B, Cr, OverLim)  if (i - last_start + 1) > lim
                             => panic!("word starting with {} longer than limit!",
-                                    ss.slice(last_start, i + 1)),
+                                      &ss[last_start..i + 1]),
             (B, Cr, OverLim)  => {
-                *cont = it(ss.slice(slice_start, last_end));
+                *cont = it(&ss[slice_start..last_end]);
                 slice_start = last_start;
                 B
             }
@@ -908,7 +909,7 @@ fn each_split_within<'a, F>(ss: &'a str, lim: usize, mut it: F)
             }
             (B, Ws, OverLim)  => {
                 last_end = i;
-                *cont = it(ss.slice(slice_start, last_end));
+                *cont = it(&ss[slice_start..last_end]);
                 A
             }
 
@@ -917,14 +918,14 @@ fn each_split_within<'a, F>(ss: &'a str, lim: usize, mut it: F)
                 B
             }
             (C, Cr, OverLim)  => {
-                *cont = it(ss.slice(slice_start, last_end));
+                *cont = it(&ss[slice_start..last_end]);
                 slice_start = i;
                 last_start = i;
                 last_end = i;
                 B
             }
             (C, Ws, OverLim)  => {
-                *cont = it(ss.slice(slice_start, last_end));
+                *cont = it(&ss[slice_start..last_end]);
                 A
             }
             (C, Ws, UnderLim) => {
