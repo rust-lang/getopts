@@ -100,15 +100,23 @@ use std::result;
 
 /// A description of the options that a program can handle
 pub struct Options {
-    grps: Vec<OptGroup>
+    grps: Vec<OptGroup>,
+    parsing_style : ParsingStyle
 }
 
 impl Options {
     /// Create a blank set of options
     pub fn new() -> Options {
         Options {
-            grps: Vec::new()
+            grps: Vec::new(),
+            parsing_style: ParsingStyle::FloatingFrees
         }
+    }
+
+    /// Set the parsing style
+    pub fn parsing_style(&mut self, style: ParsingStyle) -> &mut Options {
+        self.parsing_style = style;
+        self
     }
 
     /// Create a generic option group, stating all parameters explicitly
@@ -266,7 +274,7 @@ impl Options {
     /// Returns `Err(Fail)` on failure: use the `Show` implementation of `Fail` to display
     /// information about it.
     pub fn parse(&self, args: &[String]) -> Result {
-        getopts(args, self.grps.as_slice())
+        getopts(args, self.grps.as_slice(), self.parsing_style)
     }
 
     /// Derive a short one-line usage summary from a set of long options.
@@ -364,6 +372,17 @@ impl Options {
                 rows.collect::<Vec<String>>().connect("\n"))
     }
 }
+
+/// What parsing style to use when parsing arguments
+#[derive(Clone, PartialEq, Eq)]
+pub enum ParsingStyle {
+    /// Flags and "free" arguments can be freely inter-mixed.
+    FloatingFrees,
+    /// As soon as a "free" argument (i.e. non-flag) is encountered, stop
+    /// considering any remaining arguments as flags.
+    StopAtFirstFree
+}
+impl Copy for ParsingStyle {}
 
 /// Name of an option. Either a string or a single char.
 #[derive(Clone, PartialEq, Eq)]
@@ -677,7 +696,7 @@ impl fmt::Display for Fail {
     }
 }
 
-fn getopts(args: &[String], optgrps: &[OptGroup]) -> Result {
+fn getopts(args: &[String], optgrps: &[OptGroup], parsing_style: ParsingStyle) -> Result {
     let opts: Vec<Opt> = optgrps.iter().map(|x| x.long_to_short()).collect();
     let n_opts = opts.len();
 
@@ -691,7 +710,16 @@ fn getopts(args: &[String], optgrps: &[OptGroup]) -> Result {
         let cur = args[i].clone();
         let curlen = cur.len();
         if !is_arg(cur.as_slice()) {
-            free.push(cur);
+            match parsing_style {
+                ParsingStyle::FloatingFrees => free.push(cur),
+                ParsingStyle::StopAtFirstFree => {
+                    while i < l {
+                        free.push(args[i].clone());
+                        i += 1;
+                    }
+                    break;
+                }
+            }
         } else if cur == "--" {
             let mut j = i + 1;
             while j < l { free.push(args[j].clone()); j += 1; }
@@ -967,7 +995,7 @@ fn test_split_within() {
 
 #[cfg(test)]
 mod tests {
-    use super::{HasArg, Name, Occur, Opt, Options};
+    use super::{HasArg, Name, Occur, Opt, Options, ParsingStyle};
     use super::Fail::*;
 
     // Tests for reqopt
@@ -1424,6 +1452,31 @@ mod tests {
             assert!(pair[0] == "-A B");
             assert!(pair[1] == "-60 70");
             assert!((!m.opt_present("notpresent")));
+          }
+          _ => panic!()
+        }
+    }
+
+    #[test]
+    fn test_mixed_stop() {
+        let args =
+            vec!("-a".to_string(),
+                 "b".to_string(),
+                 "-c".to_string(),
+                 "d".to_string());
+        match Options::new()
+              .parsing_style(ParsingStyle::StopAtFirstFree)
+              .optflag("a", "", "")
+              .optopt("c", "", "", "")
+              .parse(args.as_slice()) {
+          Ok(ref m) => {
+            println!("{}", m.opt_present("c"));
+            assert!(m.opt_present("a"));
+            assert!(!m.opt_present("c"));
+            assert_eq!(m.free.len(), 3);
+            assert_eq!(m.free[0], "b");
+            assert_eq!(m.free[1], "-c");
+            assert_eq!(m.free[2], "d");
           }
           _ => panic!()
         }
