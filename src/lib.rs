@@ -374,7 +374,7 @@ impl Options {
 }
 
 /// What parsing style to use when parsing arguments
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ParsingStyle {
     /// Flags and "free" arguments can be freely inter-mixed.
     FloatingFrees,
@@ -382,7 +382,6 @@ pub enum ParsingStyle {
     /// considering any remaining arguments as flags.
     StopAtFirstFree
 }
-impl Copy for ParsingStyle {}
 
 /// Name of an option. Either a string or a single char.
 #[derive(Clone, PartialEq, Eq)]
