@@ -271,7 +271,7 @@ impl Options {
     /// `opt_str`, etc. to interrogate results.
     /// # Panics
     ///
-    /// Returns `Err(Fail)` on failure: use the `Show` implementation of `Fail` to display
+    /// Returns `Err(Fail)` on failure: use the `Debug` implementation of `Fail` to display
     /// information about it.
     pub fn parse(&self, args: &[String]) -> Result {
         let opts: Vec<Opt> = self.grps.iter().map(|x| x.long_to_short()).collect();
@@ -597,9 +597,9 @@ pub struct Matches {
 }
 
 /// The type returned when the command line does not conform to the
-/// expected format. Use the `Show` implementation to output detailed
+/// expected format. Use the `Debug` implementation to output detailed
 /// information.
-#[derive(Clone, PartialEq, Eq, Show)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Fail {
     /// The option requires an argument but none was passed.
     ArgumentMissing(String),
@@ -791,7 +791,7 @@ fn find_opt(opts: &[Opt], nm: Name) -> Option<usize> {
 
 impl Fail {
     /// Convert a `Fail` enum into an error string.
-    #[deprecated="use `Show` (`{}` format specifier)"]
+    #[deprecated="use `Debug` (`{}` format specifier)"]
     pub fn to_err_msg(self) -> String {
         self.to_string()
     }
