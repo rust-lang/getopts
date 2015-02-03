@@ -80,8 +80,9 @@
        html_favicon_url = "http://www.rust-lang.org/favicon.ico",
        html_root_url = "http://doc.rust-lang.org/getopts/")]
 #![deny(missing_docs)]
-#![allow(unstable)]
 #![cfg_attr(test, deny(warnings))]
+#![feature(collections)]
+#![feature(core)]
 
 #[cfg(test)] #[macro_use] extern crate log;
 
@@ -271,10 +272,140 @@ impl Options {
     /// `opt_str`, etc. to interrogate results.
     /// # Panics
     ///
-    /// Returns `Err(Fail)` on failure: use the `Show` implementation of `Fail` to display
+    /// Returns `Err(Fail)` on failure: use the `Debug` implementation of `Fail` to display
     /// information about it.
     pub fn parse(&self, args: &[String]) -> Result {
-        getopts(args, self.grps.as_slice(), self.parsing_style)
+        let opts: Vec<Opt> = self.grps.iter().map(|x| x.long_to_short()).collect();
+        let n_opts = opts.len();
+
+        fn f(_x: usize) -> Vec<Optval> { return Vec::new(); }
+
+        let mut vals = (0 .. n_opts).map(f).collect::<Vec<_>>();
+        let mut free: Vec<String> = Vec::new();
+        let l = args.len();
+        let mut i = 0;
+        while i < l {
+            let cur = args[i].clone();
+            let curlen = cur.len();
+            if !is_arg(cur.as_slice()) {
+                match self.parsing_style {
+                    ParsingStyle::FloatingFrees => free.push(cur),
+                    ParsingStyle::StopAtFirstFree => {
+                        while i < l {
+                            free.push(args[i].clone());
+                            i += 1;
+                        }
+                        break;
+                    }
+                }
+            } else if cur == "--" {
+                let mut j = i + 1;
+                while j < l { free.push(args[j].clone()); j += 1; }
+                break;
+            } else {
+                let mut names;
+                let mut i_arg = None;
+                if cur.as_bytes()[1] == b'-' {
+                    let tail = &cur[2..curlen];
+                    let tail_eq: Vec<&str> = tail.split('=').collect();
+                    if tail_eq.len() <= 1 {
+                        names = vec!(Long(tail.to_string()));
+                    } else {
+                        names =
+                            vec!(Long(tail_eq[0].to_string()));
+                        i_arg = Some(tail_eq[1].to_string());
+                    }
+                } else {
+                    let mut j = 1;
+                    names = Vec::new();
+                    while j < curlen {
+                        let range = cur.char_range_at(j);
+                        let opt = Short(range.ch);
+
+                        /* In a series of potential options (eg. -aheJ), if we
+                           see one which takes an argument, we assume all
+                           subsequent characters make up the argument. This
+                           allows options such as -L/usr/local/lib/foo to be
+                           interpreted correctly
+                        */
+
+                        let opt_id = match find_opt(opts.as_slice(), opt.clone()) {
+                          Some(id) => id,
+                          None => return Err(UnrecognizedOption(opt.to_string()))
+                        };
+
+                        names.push(opt);
+
+                        let arg_follows = match opts[opt_id].hasarg {
+                            Yes | Maybe => true,
+                            No => false
+                        };
+
+                        if arg_follows && range.next < curlen {
+                            i_arg = Some(cur[range.next..curlen].to_string());
+                            break;
+                        }
+
+                        j = range.next;
+                    }
+                }
+                let mut name_pos = 0;
+                for nm in names.iter() {
+                    name_pos += 1;
+                    let optid = match find_opt(opts.as_slice(), (*nm).clone()) {
+                      Some(id) => id,
+                      None => return Err(UnrecognizedOption(nm.to_string()))
+                    };
+                    match opts[optid].hasarg {
+                      No => {
+                        if name_pos == names.len() && !i_arg.is_none() {
+                            return Err(UnexpectedArgument(nm.to_string()));
+                        }
+                        vals[optid].push(Given);
+                      }
+                      Maybe => {
+                        if !i_arg.is_none() {
+                            vals[optid]
+                                .push(Val((i_arg.clone())
+                                .unwrap()));
+                        } else if name_pos < names.len() || i + 1 == l ||
+                                is_arg(args[i + 1].as_slice()) {
+                            vals[optid].push(Given);
+                        } else {
+                            i += 1;
+                            vals[optid].push(Val(args[i].clone()));
+                        }
+                      }
+                      Yes => {
+                        if !i_arg.is_none() {
+                            vals[optid].push(Val(i_arg.clone().unwrap()));
+                        } else if i + 1 == l {
+                            return Err(ArgumentMissing(nm.to_string()));
+                        } else {
+                            i += 1;
+                            vals[optid].push(Val(args[i].clone()));
+                        }
+                      }
+                    }
+                }
+            }
+            i += 1;
+        }
+        for i in 0 .. n_opts {
+            let n = vals[i].len();
+            let occ = opts[i].occur;
+            if occ == Req && n == 0 {
+                return Err(OptionMissing(opts[i].name.to_string()));
+            }
+            if occ != Multi && n > 1 {
+                return Err(OptionDuplicated(opts[i].name.to_string()));
+            }
+        }
+        Ok(Matches {
+            opts: opts,
+            vals: vals,
+            free: free
+        })
     }
 
     /// Derive a short one-line usage summary from a set of long options.
@@ -338,7 +469,7 @@ impl Options {
             // here we just need to indent the start of the description
             let rowlen = row.chars().count();
             if rowlen < 24 {
-                for _ in range(0, 24 - rowlen) {
+                for _ in 0 .. 24 - rowlen {
                     row.push(' ');
                 }
             } else {
@@ -395,7 +526,7 @@ enum Name {
 }
 
 /// Describes whether an option has an argument.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum HasArg {
     /// The option requires an argument.
     Yes,
@@ -405,10 +536,8 @@ pub enum HasArg {
     Maybe,
 }
 
-impl Copy for HasArg {}
-
 /// Describes how often an option may occur.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Occur {
     /// The option occurs once.
     Req,
@@ -417,8 +546,6 @@ pub enum Occur {
     /// The option occurs zero or more times.
     Multi,
 }
-
-impl Copy for Occur {}
 
 /// A description of a possible option.
 #[derive(Clone, PartialEq, Eq)]
@@ -471,9 +598,9 @@ pub struct Matches {
 }
 
 /// The type returned when the command line does not conform to the
-/// expected format. Use the `Show` implementation to output detailed
+/// expected format. Use the `Debug` implementation to output detailed
 /// information.
-#[derive(Clone, PartialEq, Eq, Show)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Fail {
     /// The option requires an argument but none was passed.
     ArgumentMissing(String),
@@ -488,7 +615,7 @@ pub enum Fail {
 }
 
 /// The type of failure that occurred.
-#[derive(PartialEq, Eq)]
+#[derive(Copy, PartialEq, Eq)]
 #[allow(missing_docs)]
 pub enum FailType {
     ArgumentMissing_,
@@ -497,8 +624,6 @@ pub enum FailType {
     OptionDuplicated_,
     UnexpectedArgument_,
 }
-
-impl Copy for FailType {}
 
 /// The result of parsing a command line with a set of options.
 pub type Result = result::Result<Matches, Fail>;
@@ -667,7 +792,7 @@ fn find_opt(opts: &[Opt], nm: Name) -> Option<usize> {
 
 impl Fail {
     /// Convert a `Fail` enum into an error string.
-    #[deprecated="use `Show` (`{}` format specifier)"]
+    #[deprecated="use `Debug` (`{}` format specifier)"]
     pub fn to_err_msg(self) -> String {
         self.to_string()
     }
@@ -693,140 +818,6 @@ impl fmt::Display for Fail {
             }
         }
     }
-}
-
-fn getopts(args: &[String], optgrps: &[OptGroup], parsing_style: ParsingStyle) -> Result {
-    let opts: Vec<Opt> = optgrps.iter().map(|x| x.long_to_short()).collect();
-    let n_opts = opts.len();
-
-    fn f(_x: usize) -> Vec<Optval> { return Vec::new(); }
-
-    let mut vals = range(0, n_opts).map(f).collect::<Vec<_>>();
-    let mut free: Vec<String> = Vec::new();
-    let l = args.len();
-    let mut i = 0;
-    while i < l {
-        let cur = args[i].clone();
-        let curlen = cur.len();
-        if !is_arg(cur.as_slice()) {
-            match parsing_style {
-                ParsingStyle::FloatingFrees => free.push(cur),
-                ParsingStyle::StopAtFirstFree => {
-                    while i < l {
-                        free.push(args[i].clone());
-                        i += 1;
-                    }
-                    break;
-                }
-            }
-        } else if cur == "--" {
-            let mut j = i + 1;
-            while j < l { free.push(args[j].clone()); j += 1; }
-            break;
-        } else {
-            let mut names;
-            let mut i_arg = None;
-            if cur.as_bytes()[1] == b'-' {
-                let tail = &cur[2..curlen];
-                let tail_eq: Vec<&str> = tail.split('=').collect();
-                if tail_eq.len() <= 1 {
-                    names = vec!(Long(tail.to_string()));
-                } else {
-                    names =
-                        vec!(Long(tail_eq[0].to_string()));
-                    i_arg = Some(tail_eq[1].to_string());
-                }
-            } else {
-                let mut j = 1;
-                names = Vec::new();
-                while j < curlen {
-                    let range = cur.char_range_at(j);
-                    let opt = Short(range.ch);
-
-                    /* In a series of potential options (eg. -aheJ), if we
-                       see one which takes an argument, we assume all
-                       subsequent characters make up the argument. This
-                       allows options such as -L/usr/local/lib/foo to be
-                       interpreted correctly
-                    */
-
-                    let opt_id = match find_opt(opts.as_slice(), opt.clone()) {
-                      Some(id) => id,
-                      None => return Err(UnrecognizedOption(opt.to_string()))
-                    };
-
-                    names.push(opt);
-
-                    let arg_follows = match opts[opt_id].hasarg {
-                        Yes | Maybe => true,
-                        No => false
-                    };
-
-                    if arg_follows && range.next < curlen {
-                        i_arg = Some(cur[range.next..curlen].to_string());
-                        break;
-                    }
-
-                    j = range.next;
-                }
-            }
-            let mut name_pos = 0;
-            for nm in names.iter() {
-                name_pos += 1;
-                let optid = match find_opt(opts.as_slice(), (*nm).clone()) {
-                  Some(id) => id,
-                  None => return Err(UnrecognizedOption(nm.to_string()))
-                };
-                match opts[optid].hasarg {
-                  No => {
-                    if name_pos == names.len() && !i_arg.is_none() {
-                        return Err(UnexpectedArgument(nm.to_string()));
-                    }
-                    vals[optid].push(Given);
-                  }
-                  Maybe => {
-                    if !i_arg.is_none() {
-                        vals[optid]
-                            .push(Val((i_arg.clone())
-                            .unwrap()));
-                    } else if name_pos < names.len() || i + 1 == l ||
-                            is_arg(args[i + 1].as_slice()) {
-                        vals[optid].push(Given);
-                    } else {
-                        i += 1;
-                        vals[optid].push(Val(args[i].clone()));
-                    }
-                  }
-                  Yes => {
-                    if !i_arg.is_none() {
-                        vals[optid].push(Val(i_arg.clone().unwrap()));
-                    } else if i + 1 == l {
-                        return Err(ArgumentMissing(nm.to_string()));
-                    } else {
-                        i += 1;
-                        vals[optid].push(Val(args[i].clone()));
-                    }
-                  }
-                }
-            }
-        }
-        i += 1;
-    }
-    for i in range(0, n_opts) {
-        let n = vals[i].len();
-        let occ = opts[i].occur;
-        if occ == Req && n == 0 {
-            return Err(OptionMissing(opts[i].name.to_string()));
-        }
-        if occ != Multi && n > 1 {
-            return Err(OptionDuplicated(opts[i].name.to_string()));
-        }
-    }
-    Ok(Matches {
-        opts: opts,
-        vals: vals,
-        free: free
-    })
 }
 
 fn format_option(opt: &OptGroup) -> String {
@@ -866,22 +857,24 @@ fn format_option(opt: &OptGroup) -> String {
     line
 }
 
+#[derive(Copy)]
 enum SplitWithinState {
     A,  // leading whitespace, initial state
     B,  // words
     C,  // internal and trailing whitespace
 }
-impl Copy for SplitWithinState {}
+
+#[derive(Copy)]
 enum Whitespace {
     Ws, // current char is whitespace
     Cr  // current char is not whitespace
 }
-impl Copy for Whitespace {}
+
+#[derive(Copy)]
 enum LengthLimit {
     UnderLim, // current char makes current substring still fit in limit
     OverLim   // current char makes current substring no longer fit in limit
 }
-impl Copy for LengthLimit {}
 
 
 /// Splits a string into substrings with possibly internal whitespace,
