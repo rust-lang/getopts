@@ -80,8 +80,9 @@
        html_favicon_url = "http://www.rust-lang.org/favicon.ico",
        html_root_url = "http://doc.rust-lang.org/getopts/")]
 #![deny(missing_docs)]
-#![allow(unstable)]
 #![cfg_attr(test, deny(warnings))]
+#![feature(collections)]
+#![feature(core)]
 
 #[cfg(test)] #[macro_use] extern crate log;
 
