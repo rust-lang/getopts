@@ -279,7 +279,7 @@ impl Options {
 
         fn f(_x: usize) -> Vec<Optval> { return Vec::new(); }
 
-        let mut vals = range(0, n_opts).map(f).collect::<Vec<_>>();
+        let mut vals = (0 .. n_opts).map(f).collect::<Vec<_>>();
         let mut free: Vec<String> = Vec::new();
         let l = args.len();
         let mut i = 0;
@@ -390,7 +390,7 @@ impl Options {
             }
             i += 1;
         }
-        for i in range(0, n_opts) {
+        for i in 0 .. n_opts {
             let n = vals[i].len();
             let occ = opts[i].occur;
             if occ == Req && n == 0 {
@@ -468,7 +468,7 @@ impl Options {
             // here we just need to indent the start of the description
             let rowlen = row.chars().count();
             if rowlen < 24 {
-                for _ in range(0, 24 - rowlen) {
+                for _ in 0 .. 24 - rowlen {
                     row.push(' ');
                 }
             } else {
