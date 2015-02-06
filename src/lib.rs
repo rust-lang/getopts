@@ -83,6 +83,8 @@
 #![cfg_attr(test, deny(warnings))]
 #![feature(collections)]
 #![feature(core)]
+#![feature(std_misc)]
+#![feature(os)]
 
 #[cfg(test)] #[macro_use] extern crate log;
 
@@ -95,8 +97,9 @@ use self::SplitWithinState::*;
 use self::Whitespace::*;
 use self::LengthLimit::*;
 
+use std::ffi::AsOsStr;
 use std::fmt;
-use std::iter::repeat;
+use std::iter::{repeat, IntoIterator};
 use std::result;
 
 /// A description of the options that a program can handle
@@ -272,9 +275,12 @@ impl Options {
     /// `opt_str`, etc. to interrogate results.
     /// # Panics
     ///
-    /// Returns `Err(Fail)` on failure: use the `Debug` implementation of `Fail` to display
-    /// information about it.
-    pub fn parse(&self, args: &[String]) -> Result {
+    /// Returns `Err(Fail)` on failure: use the `Debug` implementation of `Fail`
+    /// to display information about it.
+    pub fn parse<C: IntoIterator>(&self, args: C) -> Result
+        where C::Iter: Iterator,
+              <C::Iter as Iterator>::Item: AsOsStr
+    {
         let opts: Vec<Opt> = self.grps.iter().map(|x| x.long_to_short()).collect();
         let n_opts = opts.len();
 
@@ -282,6 +288,9 @@ impl Options {
 
         let mut vals = (0 .. n_opts).map(f).collect::<Vec<_>>();
         let mut free: Vec<String> = Vec::new();
+        let args = args.into_iter().map(|i| {
+            i.as_os_str().to_str().unwrap().to_string()
+        }).collect::<Vec<_>>();
         let l = args.len();
         let mut i = 0;
         while i < l {
@@ -1299,7 +1308,7 @@ mod tests {
           }
           _ => panic!()
         }
-        let no_args = vec!();
+        let no_args: Vec<String> = vec!();
         match opts.parse(no_args.as_slice()) {
           Ok(ref m) => {
             assert!(!m.opt_present("test"));
