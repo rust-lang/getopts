@@ -278,8 +278,8 @@ impl Options {
     /// Returns `Err(Fail)` on failure: use the `Debug` implementation of `Fail`
     /// to display information about it.
     pub fn parse<C: IntoIterator>(&self, args: C) -> Result
-        where C::Iter: Iterator,
-              <C::Iter as Iterator>::Item: AsOsStr
+        where C::IntoIter: Iterator,
+              <C::IntoIter as Iterator>::Item: AsOsStr
     {
         let opts: Vec<Opt> = self.grps.iter().map(|x| x.long_to_short()).collect();
         let n_opts = opts.len();
