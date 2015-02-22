@@ -13,7 +13,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-getopts = "0.1.0"
+getopts = "0.2.4"
 ```
 
 and this to your crate root:
