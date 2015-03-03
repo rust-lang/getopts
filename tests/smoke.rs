@@ -1,5 +1,3 @@
-#![feature(env)]
-
 extern crate getopts;
 
 use std::env;
