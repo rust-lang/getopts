@@ -323,8 +323,7 @@ impl Options {
                     }
                 } else {
                     names = Vec::new();
-                    let mut chars = cur.char_indices().skip(1);
-                    while let Some((_, ch)) = chars.next() {
+                    for (j, ch) in cur.char_indices().skip(1) {
                         let opt = Short(ch);
 
                         /* In a series of potential options (eg. -aheJ), if we
@@ -347,7 +346,8 @@ impl Options {
                         };
 
                         if arg_follows {
-                            if let Some((next, _)) = chars.next() {
+                            let next = j + ch.len_utf8();
+                            if next < cur.len() {
                                 i_arg = Some(cur[next..curlen].to_string());
                                 break;
                             }
