@@ -82,7 +82,6 @@
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
 #![feature(std_misc)]
-#![feature(os)]
 
 #[cfg(test)] #[macro_use] extern crate log;
 
