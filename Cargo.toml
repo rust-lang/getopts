@@ -13,4 +13,4 @@ getopts-like option parsing.
 """
 
 [dependencies]
-log = "0.2"
+log = "0.3"
