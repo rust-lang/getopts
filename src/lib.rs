@@ -81,7 +81,7 @@
        html_root_url = "http://doc.rust-lang.org/getopts/")]
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
-#![feature(std_misc)]
+#![feature(convert)]
 
 #[cfg(test)] #[macro_use] extern crate log;
 
@@ -94,7 +94,7 @@ use self::SplitWithinState::*;
 use self::Whitespace::*;
 use self::LengthLimit::*;
 
-use std::ffi::AsOsStr;
+use std::ffi::OsStr;
 use std::fmt;
 use std::iter::{repeat, IntoIterator};
 use std::result;
@@ -275,7 +275,7 @@ impl Options {
     /// Returns `Err(Fail)` on failure: use the `Debug` implementation of `Fail`
     /// to display information about it.
     pub fn parse<C: IntoIterator>(&self, args: C) -> Result
-        where C::Item: AsOsStr
+        where C::Item: AsRef<OsStr>
     {
         let opts: Vec<Opt> = self.grps.iter().map(|x| x.long_to_short()).collect();
         let n_opts = opts.len();
@@ -285,7 +285,7 @@ impl Options {
         let mut vals = (0 .. n_opts).map(f).collect::<Vec<_>>();
         let mut free: Vec<String> = Vec::new();
         let args = args.into_iter().map(|i| {
-            i.as_os_str().to_str().unwrap().to_string()
+            i.as_ref().to_str().unwrap().to_string()
         }).collect::<Vec<_>>();
         let l = args.len();
         let mut i = 0;
