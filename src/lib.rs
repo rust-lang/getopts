@@ -81,7 +81,6 @@
        html_root_url = "http://doc.rust-lang.org/getopts/")]
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
-#![feature(convert)]
 
 #[cfg(test)] #[macro_use] extern crate log;
 
