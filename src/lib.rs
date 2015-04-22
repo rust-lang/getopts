@@ -792,14 +792,6 @@ fn find_opt(opts: &[Opt], nm: Name) -> Option<usize> {
     None
 }
 
-impl Fail {
-    /// Convert a `Fail` enum into an error string.
-    #[deprecated="use `Debug` (`{}` format specifier)"]
-    pub fn to_err_msg(self) -> String {
-        self.to_string()
-    }
-}
-
 impl fmt::Display for Fail {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
