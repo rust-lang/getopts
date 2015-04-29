@@ -306,6 +306,8 @@ impl Options {
                 let mut j = i + 1;
                 while j < l { free.push(args[j].clone()); j += 1; }
                 break;
+            } else if cur == "-" {
+                free.push(cur);
             } else {
                 let mut names;
                 let mut i_arg = None;
@@ -1376,6 +1378,18 @@ mod tests {
               assert!(pair[1] == "30");
           }
           _ => panic!()
+        }
+    }
+
+    #[test]
+    fn test_free_argument_is_hyphen() {
+        let args = vec!("-".to_string());
+        match Options::new().parse(&args) {
+            Ok(ref m) => {
+                assert_eq!(m.free.len(), 1);
+                assert_eq!(m.free[0], "-");
+            }
+            _ => panic!()
         }
     }
 
