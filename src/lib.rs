@@ -26,6 +26,22 @@
 //! argument following either a space or an equals sign. Single-character
 //! options don't require the space.
 //!
+//! # Usage
+//!
+//! This crates is [on crates.io](https://crates.io/crates/getopts) and can be
+//! used by adding `rand` to your dependencies in your project's `Cargo.toml`.
+//!
+//! ```toml
+//! [dependencies]
+//! getopts = "0.2.4"
+//! ```
+//! 
+//! and this to your crate root:
+//! 
+//! ```rust
+//! extern crate getopts;
+//! ```
+//!
 //! # Example
 //!
 //! The following example shows simple command line parsing for an application
