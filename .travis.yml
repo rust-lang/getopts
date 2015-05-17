@@ -1,4 +1,8 @@
 language: rust
+rust:
+  - 1.0.0
+  - beta
+  - nightly
 script:
   - cargo build --verbose
   - cargo test --verbose
@@ -6,6 +10,7 @@ script:
 after_success: |
   [ $TRAVIS_BRANCH = master ] &&
   [ $TRAVIS_PULL_REQUEST = false ] &&
+  [ $TRAVIS_RUST_VERSION = nightly ] &&
   echo '<meta http-equiv=refresh content=0;url=getopts/index.html>' > target/doc/index.html &&
   sudo pip install ghp-import &&
   ghp-import -n target/doc &&
