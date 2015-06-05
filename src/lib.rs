@@ -97,6 +97,11 @@
        html_root_url = "http://doc.rust-lang.org/getopts/")]
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
+#![cfg_attr(rust_build, feature(staged_api))]
+#![cfg_attr(rust_build, staged_api)]
+#![cfg_attr(rust_build,
+            unstable(feature = "rustc_private",
+                     reason = "use the crates.io `getopts` library instead"))]
 
 #[cfg(test)] #[macro_use] extern crate log;
 
