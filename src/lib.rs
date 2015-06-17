@@ -334,7 +334,7 @@ impl Options {
                 let mut i_arg = None;
                 if cur.as_bytes()[1] == b'-' {
                     let tail = &cur[2..curlen];
-                    let tail_eq: Vec<&str> = tail.split('=').collect();
+                    let tail_eq: Vec<&str> = tail.splitn(2, '=').collect();
                     if tail_eq.len() <= 1 {
                         names = vec!(Long(tail.to_string()));
                     } else {
@@ -1711,5 +1711,21 @@ Options:
         debug!("expected: <<{}>>", expected);
         debug!("generated: <<{}>>", generated_usage);
         assert_eq!(generated_usage, expected);
+    }
+
+    #[test]
+    fn test_args_with_equals() {
+        let mut opts = Options::new();
+        opts.optopt("o", "one", "One", "INFO");
+        opts.optopt("t", "two", "Two", "INFO");
+
+        let args = vec!("--one".to_string(), "A=B".to_string(),
+                        "--two=C=D".to_string());
+        let matches = &match opts.parse(&args) {
+            Ok(m) => m,
+            Err(e) => panic!("{}", e)
+        };
+        assert_eq!(matches.opts_str(&["o".to_string()]).unwrap(), "A=B");
+        assert_eq!(matches.opts_str(&["t".to_string()]).unwrap(), "C=D");
     }
 }
