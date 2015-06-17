@@ -327,8 +327,6 @@ impl Options {
                 let mut j = i + 1;
                 while j < l { free.push(args[j].clone()); j += 1; }
                 break;
-            } else if cur == "-" {
-                free.push(cur);
             } else {
                 let mut names;
                 let mut i_arg = None;
@@ -795,7 +793,7 @@ impl Matches {
 }
 
 fn is_arg(arg: &str) -> bool {
-    arg.as_bytes().get(0) == Some(&b'-')
+    arg.as_bytes().get(0) == Some(&b'-') && arg.len() > 1
 }
 
 fn find_opt(opts: &[Opt], nm: Name) -> Option<usize> {
@@ -1496,6 +1494,31 @@ mod tests {
             assert!(!m.opt_present("c"));
             assert_eq!(m.free.len(), 3);
             assert_eq!(m.free[0], "b");
+            assert_eq!(m.free[1], "-c");
+            assert_eq!(m.free[2], "d");
+          }
+          _ => panic!()
+        }
+    }
+
+    #[test]
+    fn test_mixed_stop_hyphen() {
+        let args =
+            vec!("-a".to_string(),
+                 "-".to_string(),
+                 "-c".to_string(),
+                 "d".to_string());
+        match Options::new()
+              .parsing_style(ParsingStyle::StopAtFirstFree)
+              .optflag("a", "", "")
+              .optopt("c", "", "", "")
+              .parse(&args) {
+          Ok(ref m) => {
+            println!("{}", m.opt_present("c"));
+            assert!(m.opt_present("a"));
+            assert!(!m.opt_present("c"));
+            assert_eq!(m.free.len(), 3);
+            assert_eq!(m.free[0], "-");
             assert_eq!(m.free[1], "-c");
             assert_eq!(m.free[2], "d");
           }
