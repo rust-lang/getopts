@@ -442,9 +442,13 @@ impl Options {
         line
     }
 
-    /// Derive a usage message from a set of long options.
+    /// Derive a usage message from a set of options.
     pub fn usage(&self, brief: &str) -> String {
         let desc_sep = format!("\n{}", repeat(" ").take(24).collect::<String>());
+
+        let any_short = self.grps.iter().any(|optref| {
+            optref.short_name.len() > 0
+        });
 
         let rows = self.grps.iter().map(|optref| {
             let OptGroup{short_name,
@@ -458,11 +462,21 @@ impl Options {
 
             // short option
             match short_name.len() {
-                0 => {}
+                0 => {
+                    if any_short {
+                        row.push_str("    ");
+                    }
+                }
                 1 => {
                     row.push('-');
                     row.push_str(&short_name);
-                    row.push(' ');
+                    if long_name.len() > 0 {
+                        row.push_str(", ");
+                    } else {
+                        // Only a single space here, so that any
+                        // argument is printed in the correct spot.
+                        row.push(' ');
+                    }
                 }
                 _ => panic!("the short name should only be 1 ascii char long"),
             }
@@ -1645,17 +1659,19 @@ mod tests {
         opts.optflag("k", "kiwi", "Desc");
         opts.optflagopt("p", "", "Desc", "VAL");
         opts.optmulti("l", "", "Desc", "VAL");
+        opts.optflag("", "starfruit", "Starfruit");
 
         let expected =
 "Usage: fruits
 
 Options:
-    -b --banana VAL     Desc
-    -a --012345678901234567890123456789 VAL
+    -b, --banana VAL    Desc
+    -a, --012345678901234567890123456789 VAL
                         Desc
-    -k --kiwi           Desc
+    -k, --kiwi          Desc
     -p [VAL]            Desc
     -l VAL              Desc
+        --starfruit     Starfruit
 ";
 
         let generated_usage = opts.usage("Usage: fruits");
@@ -1680,8 +1696,8 @@ Options:
 "Usage: fruits
 
 Options:
-    -k --kiwi           This is a long description which won't be wrapped..+..
-    -a --apple          This is a long description which _will_ be
+    -k, --kiwi          This is a long description which won't be wrapped..+..
+    -a, --apple         This is a long description which _will_ be
                         wrapped..+..
 ";
 
@@ -1705,14 +1721,58 @@ confuse the line wrapping; an apple costs 0.51€ in some parts of Europe.");
 "Usage: fruits
 
 Options:
-    -k --k–w–           The word kiwi is normally spelled with two i's
-    -a --apple          This “description” has some characters that could
+    -k, --k–w–          The word kiwi is normally spelled with two i's
+    -a, --apple         This “description” has some characters that could
                         confuse the line wrapping; an apple costs 0.51€ in
                         some parts of Europe.
 ";
 
         let usage = opts.usage("Usage: fruits");
 
+        debug!("expected: <<{}>>", expected);
+        debug!("generated: <<{}>>", usage);
+        assert!(usage == expected)
+    }
+
+    #[test]
+    fn test_usage_short_only() {
+        let mut opts = Options::new();
+        opts.optopt("k", "", "Kiwi", "VAL");
+        opts.optflag("s", "", "Starfruit");
+        opts.optflagopt("a", "", "Apple", "TYPE");
+
+        let expected =
+"Usage: fruits
+
+Options:
+    -k VAL              Kiwi
+    -s                  Starfruit
+    -a [TYPE]           Apple
+";
+
+        let usage = opts.usage("Usage: fruits");
+        debug!("expected: <<{}>>", expected);
+        debug!("generated: <<{}>>", usage);
+        assert!(usage == expected)
+    }
+
+    #[test]
+    fn test_usage_long_only() {
+        let mut opts = Options::new();
+        opts.optopt("", "kiwi", "Kiwi", "VAL");
+        opts.optflag("", "starfruit", "Starfruit");
+        opts.optflagopt("", "apple", "Apple", "TYPE");
+
+        let expected =
+"Usage: fruits
+
+Options:
+    --kiwi VAL          Kiwi
+    --starfruit         Starfruit
+    --apple [TYPE]      Apple
+";
+
+        let usage = opts.usage("Usage: fruits");
         debug!("expected: <<{}>>", expected);
         debug!("generated: <<{}>>", usage);
         assert!(usage == expected)
