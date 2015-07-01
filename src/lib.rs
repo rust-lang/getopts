@@ -366,7 +366,7 @@ impl Options {
 
                         if arg_follows {
                             let next = j + ch.len_utf8();
-                            if next < cur.len() {
+                            if next < curlen {
                                 i_arg = Some(cur[next..curlen].to_string());
                                 break;
                             }
