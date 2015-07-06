@@ -124,8 +124,12 @@ trait OsStrExt {
     fn is_empty(&self) -> bool;
 }
 
+#[cfg(unix)]
 impl<'a> OsStrExt for &'a OsStr {
-    fn is_empty(&self) -> bool { false }
+    fn is_empty(&self) -> bool {
+        use std::os::unix::ffi::OsStrExt;
+        self.as_bytes().is_empty()
+    }
 }
 
 trait Argument {
@@ -142,32 +146,93 @@ trait Argument {
     fn iter_unicode(&self) -> UnicodeIterator;
 }
 
+#[cfg(unix)]
 impl Argument for OsString {
-    fn is_option(&self) -> bool { true }
-    fn is_longoption(&self) -> bool { true }
+    fn is_option(&self) -> bool {
+        use std::os::unix::ffi::OsStrExt;
+        let bytes = self.as_bytes();
+        bytes.len() > 1 && bytes[0] == b'-'
+    }
+    fn is_longoption(&self) -> bool {
+        use std::os::unix::ffi::OsStrExt;
+        let bytes = self.as_bytes();
+        bytes.len() > 2 && bytes[0] == b'-' && bytes[1] == b'-'
+    }
     fn get_longoption<'a>(&'a self) -> (Option<&'a str>, Option<&'a OsStr>) {
-        (None, None)
+        use std::os::unix::ffi::OsStrExt;
+        if !self.is_longoption() {
+            return (None, None);
+        }
+        let tail = &self.as_bytes()[2..];
+        if let Some(eq) = tail.iter().position(|c| *c == b'=') {
+            (std::str::from_utf8(&tail[0..eq]).ok(),
+                Some(OsStr::from_bytes(&tail[eq+1..])))
+        } else {
+            (std::str::from_utf8(tail).ok(), None)
+        }
     }
     fn iter_unicode<'a>(&'a self) -> UnicodeIterator<'a> {
-        UnicodeIterator { arg: self, pos: 0 }
+        use std::os::unix::ffi::OsStrExt;
+        UnicodeIterator { arg: self.as_bytes(), pos: 0 }
     }
 }
 
+#[cfg(unix)]
 struct UnicodeIterator<'a> {
-    arg: &'a OsStr,
-    pos: u32,
+    arg: &'a [u8],
+    pos: usize,
 }
 
+#[cfg(unix)]
+// https://tools.ietf.org/html/rfc3629
+static UTF8_CHAR_WIDTH: [u8; 256] = [
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x1F
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x3F
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x5F
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x7F
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 0x9F
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 0xBF
+0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, // 0xDF
+3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, // 0xEF
+4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0, // 0xFF
+];
+
+#[cfg(unix)]
 impl<'a> Iterator for UnicodeIterator<'a> {
     type Item = char;
 
-    fn next(&mut self) -> Option<char> { None }
+    fn next(&mut self) -> Option<char> {
+        if self.pos >= self.arg.len() {
+            return None;
+        }
+        let first_byte: u8 = self.arg[self.pos];
+        let width = UTF8_CHAR_WIDTH[first_byte as usize] as usize;
+        if width == 1 { self.pos += 1; return Some(first_byte as char) }
+        if width == 0 { self.pos += 1; return None }
+        if self.pos + width < self.arg.len() {
+            let bytes = &self.arg[self.pos..self.pos + width];
+            self.pos += width;
+            let string = std::str::from_utf8(bytes).ok();
+            string.map(|s| s.chars().next().unwrap())
+        } else {
+            None
+        }
+    }
 }
 
+#[cfg(unix)]
 impl<'a> UnicodeIterator<'a> {
     /// Gets the remaining data in this iterator (which might not be unicode).
     fn rest(self) -> &'a OsStr {
-        self.arg
+        use std::os::unix::ffi::OsStrExt;
+        OsStrExt::from_bytes(&self.arg[self.pos..])
     }
 }
 
