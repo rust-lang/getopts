@@ -1377,7 +1377,7 @@ mod tests {
           Ok(ref m) => {
             // The next variable after the flag is just a free argument
 
-            assert!(m.free[0] == "20");
+            assert!(m.free[0].to_str().unwrap() == "20");
           }
           _ => panic!()
         }
@@ -1577,7 +1577,7 @@ mod tests {
         match Options::new().parse(&args) {
             Ok(ref m) => {
                 assert_eq!(m.free.len(), 1);
-                assert_eq!(m.free[0], "-");
+                assert_eq!(m.free[0].to_str().unwrap(), "-");
             }
             _ => panic!()
         }
@@ -1628,10 +1628,10 @@ mod tests {
                       .optopt("", "notpresent", "nothing to see here", "NOPE")
                       .parse(&args) {
           Ok(ref m) => {
-            assert!(m.free[0] == "prog");
-            assert!(m.free[1] == "free1");
+            assert!(m.free[0].to_str().unwrap() == "prog");
+            assert!(m.free[1].to_str().unwrap() == "free1");
             assert_eq!(m.opt_str("s").unwrap(), "20");
-            assert!(m.free[2] == "free2");
+            assert!(m.free[2].to_str().unwrap() == "free2");
             assert!((m.opt_present("flag")));
             assert_eq!(m.opt_str("long").unwrap(), "30");
             assert!((m.opt_present("f")));
@@ -1664,9 +1664,9 @@ mod tests {
             assert!(m.opt_present("a"));
             assert!(!m.opt_present("c"));
             assert_eq!(m.free.len(), 3);
-            assert_eq!(m.free[0], "b");
-            assert_eq!(m.free[1], "-c");
-            assert_eq!(m.free[2], "d");
+            assert_eq!(m.free[0].to_str().unwrap(), "b");
+            assert_eq!(m.free[1].to_str().unwrap(), "-c");
+            assert_eq!(m.free[2].to_str().unwrap(), "d");
           }
           _ => panic!()
         }
@@ -1689,9 +1689,9 @@ mod tests {
             assert!(m.opt_present("a"));
             assert!(!m.opt_present("c"));
             assert_eq!(m.free.len(), 3);
-            assert_eq!(m.free[0], "-");
-            assert_eq!(m.free[1], "-c");
-            assert_eq!(m.free[2], "d");
+            assert_eq!(m.free[0].to_str().unwrap(), "-");
+            assert_eq!(m.free[1].to_str().unwrap(), "-c");
+            assert_eq!(m.free[2].to_str().unwrap(), "d");
           }
           _ => panic!()
         }
