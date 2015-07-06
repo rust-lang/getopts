@@ -83,7 +83,7 @@
 //!     }
 //!     let output = matches.opt_str("o");
 //!     let input = if !matches.free.is_empty() {
-//!         matches.free[0].clone()
+//!         matches.free[0].clone().into_string().unwrap()
 //!     } else {
 //!         print_usage(&program, opts);
 //!         return;
