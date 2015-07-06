@@ -816,8 +816,8 @@ impl Matches {
         })
     }
 
-    /// Returns the string argument supplied to one of several matching options or `None`.
-    pub fn opts_str(&self, names: &[String]) -> Option<OsString> {
+    /// Returns the argument supplied to one of several matching options or `None`.
+    pub fn opts_str_os(&self, names: &[String]) -> Option<OsString> {
         names.iter().filter_map(|nm| {
             match self.opt_val(&nm) {
                 Some(Val(s)) => Some(s),
@@ -826,11 +826,18 @@ impl Matches {
         }).next()
     }
 
+    /// Returns the string argument supplied to one of several matching options or `None`.
+    ///
+    /// Panics if the argument cannot be decoded to a string.
+    pub fn opts_str(&self, names: &[String]) -> Option<String> {
+        self.opts_str_os(names).map(|s| s.into_string().unwrap())
+    }
+
     /// Returns a vector of the arguments provided to all matches of the given
     /// option.
     ///
     /// Used when an option accepts multiple values.
-    pub fn opt_strs(&self, nm: &str) -> Vec<OsString> {
+    pub fn opt_strs_os(&self, nm: &str) -> Vec<OsString> {
         self.opt_vals(nm).into_iter().filter_map(|v| {
             match v {
                 Val(s) => Some(s),
@@ -839,12 +846,29 @@ impl Matches {
         }).collect()
     }
 
+    /// Returns a vector of the arguments provided to all matches of the given
+    /// option.
+    ///
+    /// Used when an option accepts multiple values.
+    ///
+    /// Panics if one of the arguments cannot be decoded to a string.
+    pub fn opt_strs(&self, nm: &str) -> Vec<String> {
+        self.opt_strs_os(nm).into_iter().map(|s| s.into_string().unwrap()).collect()
+    }
+
     /// Returns the string argument supplied to a matching option or `None`.
-    pub fn opt_str(&self, nm: &str) -> Option<OsString> {
+    pub fn opt_str_os(&self, nm: &str) -> Option<OsString> {
         match self.opt_val(nm) {
             Some(Val(s)) => Some(s),
             _ => None,
         }
+    }
+
+    /// Returns the string argument supplied to a matching option or `None`.
+    ///
+    /// Panics if the argument cannot be decoded to a string.
+    pub fn opt_str(&self, nm: &str) -> Option<String> {
+        self.opt_str_os(nm).map(|s| s.into_string().unwrap())
     }
 
 
@@ -853,10 +877,25 @@ impl Matches {
     /// Returns none if the option was not present, `def` if the option was
     /// present but no argument was provided, and the argument if the option was
     /// present and an argument was provided.
-    pub fn opt_default(&self, nm: &str, def: &OsStr) -> Option<OsString> {
+    pub fn opt_default_os(&self, nm: &str, def: &OsStr) -> Option<OsString> {
         match self.opt_val(nm) {
             Some(Val(s)) => Some(s),
             Some(_) => Some(def.to_owned()),
+            None => None,
+        }
+    }
+
+    /// Returns the matching string, a default, or none.
+    ///
+    /// Returns none if the option was not present, `def` if the option was
+    /// present but no argument was provided, and the argument if the option was
+    /// present and an argument was provided.
+    ///
+    /// Panics if the argument was provided but cannot be decoded to a string.
+    pub fn opt_default(&self, nm: &str, def: &str) -> Option<String> {
+        match self.opt_val(nm) {
+            Some(Val(s)) => Some(s.into_string().unwrap()),
+            Some(_) => Some(def.to_string()),
             None => None,
         }
     }
