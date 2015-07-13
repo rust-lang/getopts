@@ -433,6 +433,7 @@ impl Options {
     }
 
     /// Derive a short one-line usage summary from a set of long options.
+    #[allow(deprecated)] // connect => join in 1.3
     pub fn short_usage(&self, program_name: &str) -> String {
         let mut line = format!("Usage: {} ", program_name);
         line.push_str(&self.grps.iter()
@@ -443,6 +444,7 @@ impl Options {
     }
 
     /// Derive a usage message from a set of options.
+    #[allow(deprecated)] // connect => join in 1.3
     pub fn usage(&self, brief: &str) -> String {
         let desc_sep = format!("\n{}", repeat(" ").take(24).collect::<String>());
 
