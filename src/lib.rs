@@ -83,7 +83,7 @@
 //!     }
 //!     let output = matches.opt_str("o");
 //!     let input = if !matches.free.is_empty() {
-//!         matches.free[0].clone()
+//!         matches.free[0].clone().into_string().unwrap()
 //!     } else {
 //!         print_usage(&program, opts);
 //!         return;
@@ -114,10 +114,127 @@ use self::SplitWithinState::*;
 use self::Whitespace::*;
 use self::LengthLimit::*;
 
-use std::ffi::OsStr;
+use std::ffi::{OsString, OsStr};
 use std::fmt;
 use std::iter::{repeat, IntoIterator};
 use std::result;
+
+trait OsStrExt {
+    /// Is it empty?
+    fn is_empty(&self) -> bool;
+}
+
+#[cfg(unix)]
+impl<'a> OsStrExt for &'a OsStr {
+    fn is_empty(&self) -> bool {
+        use std::os::unix::ffi::OsStrExt;
+        self.as_bytes().is_empty()
+    }
+}
+
+trait Argument {
+    /// Begins with '-'.
+    fn is_option(&self) -> bool;
+
+    /// Begins with '--'.
+    fn is_longoption(&self) -> bool;
+
+    /// Parse this as "--option" or "--option=value", returns (option, value).
+    fn get_longoption<'a>(&'a self) -> (Option<&'a str>, Option<&'a OsStr>);
+
+    /// Provide an iterator over the unicode prefix of the string.
+    fn iter_unicode(&self) -> UnicodeIterator;
+}
+
+#[cfg(unix)]
+impl Argument for OsString {
+    fn is_option(&self) -> bool {
+        use std::os::unix::ffi::OsStrExt;
+        let bytes = self.as_bytes();
+        bytes.len() > 1 && bytes[0] == b'-'
+    }
+    fn is_longoption(&self) -> bool {
+        use std::os::unix::ffi::OsStrExt;
+        let bytes = self.as_bytes();
+        bytes.len() > 2 && bytes[0] == b'-' && bytes[1] == b'-'
+    }
+    fn get_longoption<'a>(&'a self) -> (Option<&'a str>, Option<&'a OsStr>) {
+        use std::os::unix::ffi::OsStrExt;
+        if !self.is_longoption() {
+            return (None, None);
+        }
+        let tail = &self.as_bytes()[2..];
+        if let Some(eq) = tail.iter().position(|c| *c == b'=') {
+            (std::str::from_utf8(&tail[0..eq]).ok(),
+                Some(OsStr::from_bytes(&tail[eq+1..])))
+        } else {
+            (std::str::from_utf8(tail).ok(), None)
+        }
+    }
+    fn iter_unicode<'a>(&'a self) -> UnicodeIterator<'a> {
+        use std::os::unix::ffi::OsStrExt;
+        UnicodeIterator { arg: self.as_bytes(), pos: 0 }
+    }
+}
+
+#[cfg(unix)]
+struct UnicodeIterator<'a> {
+    arg: &'a [u8],
+    pos: usize,
+}
+
+#[cfg(unix)]
+// https://tools.ietf.org/html/rfc3629
+static UTF8_CHAR_WIDTH: [u8; 256] = [
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x1F
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x3F
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x5F
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // 0x7F
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 0x9F
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 0xBF
+0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, // 0xDF
+3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, // 0xEF
+4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0, // 0xFF
+];
+
+#[cfg(unix)]
+impl<'a> Iterator for UnicodeIterator<'a> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<char> {
+        if self.pos >= self.arg.len() {
+            return None;
+        }
+        let first_byte: u8 = self.arg[self.pos];
+        let width = UTF8_CHAR_WIDTH[first_byte as usize] as usize;
+        if width == 1 { self.pos += 1; return Some(first_byte as char) }
+        if width == 0 { self.pos += 1; return None }
+        if self.pos + width < self.arg.len() {
+            let bytes = &self.arg[self.pos..self.pos + width];
+            self.pos += width;
+            let string = std::str::from_utf8(bytes).ok();
+            string.map(|s| s.chars().next().unwrap())
+        } else {
+            None
+        }
+    }
+}
+
+#[cfg(unix)]
+impl<'a> UnicodeIterator<'a> {
+    /// Gets the remaining data in this iterator (which might not be unicode).
+    fn rest(self) -> &'a OsStr {
+        use std::os::unix::ffi::OsStrExt;
+        OsStrExt::from_bytes(&self.arg[self.pos..])
+    }
+}
 
 /// A description of the options that a program can handle
 pub struct Options {
@@ -303,16 +420,16 @@ impl Options {
         fn f(_x: usize) -> Vec<Optval> { return Vec::new(); }
 
         let mut vals = (0 .. n_opts).map(f).collect::<Vec<_>>();
-        let mut free: Vec<String> = Vec::new();
+        let mut free: Vec<OsString> = Vec::new();
         let args = args.into_iter().map(|i| {
-            i.as_ref().to_str().unwrap().to_string()
-        }).collect::<Vec<_>>();
+            i.as_ref().to_owned()
+        }).collect::<Vec<OsString>>();
         let l = args.len();
         let mut i = 0;
         while i < l {
             let cur = args[i].clone();
-            let curlen = cur.len();
-            if !is_arg(&cur) {
+            // Not an option: free argument
+            if !cur.is_option() {
                 match self.parsing_style {
                     ParsingStyle::FloatingFrees => free.push(cur),
                     ParsingStyle::StopAtFirstFree => {
@@ -323,26 +440,31 @@ impl Options {
                         break;
                     }
                 }
-            } else if cur == "--" {
+            // "--" indicates the end of options
+            } else if cur.to_str() == Some("==") {
                 let mut j = i + 1;
                 while j < l { free.push(args[j].clone()); j += 1; }
                 break;
             } else {
                 let mut names;
-                let mut i_arg = None;
-                if cur.as_bytes()[1] == b'-' {
-                    let tail = &cur[2..curlen];
-                    let tail_eq: Vec<&str> = tail.splitn(2, '=').collect();
-                    if tail_eq.len() <= 1 {
-                        names = vec!(Long(tail.to_string()));
+                let mut i_arg: Option<&OsStr> = None;
+                // Long option
+                if cur.is_longoption() {
+                    if let (Some(longopt), i_arg_) = cur.get_longoption() {
+                        names = vec!(Long(longopt.to_owned()));
+                        // If --opt=val, i_arg is Some("i_arg"), else None
+                        i_arg = i_arg_;
+                    // Can't get the longopt but begins with "--": encoding error
                     } else {
-                        names =
-                            vec!(Long(tail_eq[0].to_string()));
-                        i_arg = Some(tail_eq[1].to_string());
+                        let failed = cur.to_string_lossy().into_owned();
+                        return Err(UnrecognizedOption(failed));
                     }
+                // Short options
                 } else {
                     names = Vec::new();
-                    for (j, ch) in cur.char_indices().skip(1) {
+                    let mut iter_unicode = cur.iter_unicode();
+                    iter_unicode.next(); // initial -
+                    while let Some(ch) = iter_unicode.next() {
                         let opt = Short(ch);
 
                         /* In a series of potential options (eg. -aheJ), if we
@@ -365,11 +487,12 @@ impl Options {
                         };
 
                         if arg_follows {
-                            let next = j + ch.len_utf8();
-                            if next < cur.len() {
-                                i_arg = Some(cur[next..curlen].to_string());
-                                break;
-                            }
+                            let rest = iter_unicode.rest();
+                            i_arg = match rest.is_empty() {
+                                true => None,
+                                false => Some(rest),
+                            };
+                            break;
                         }
                     }
                 }
@@ -390,10 +513,9 @@ impl Options {
                       Maybe => {
                         if !i_arg.is_none() {
                             vals[optid]
-                                .push(Val((i_arg.clone())
-                                .unwrap()));
+                                .push(Val(i_arg.unwrap().to_owned()));
                         } else if name_pos < names.len() || i + 1 == l ||
-                                is_arg(&args[i + 1]) {
+                                args[i + 1].is_option() {
                             vals[optid].push(Given);
                         } else {
                             i += 1;
@@ -402,7 +524,7 @@ impl Options {
                       }
                       Yes => {
                         if !i_arg.is_none() {
-                            vals[optid].push(Val(i_arg.clone().unwrap()));
+                            vals[optid].push(Val(i_arg.unwrap().to_owned()));
                         } else if i + 1 == l {
                             return Err(ArgumentMissing(nm.to_string()));
                         } else {
@@ -621,7 +743,7 @@ struct OptGroup {
 /// Describes whether an option is given at all or has a value.
 #[derive(Clone, PartialEq, Eq)]
 enum Optval {
-    Val(String),
+    Val(OsString),
     Given,
 }
 
@@ -634,7 +756,7 @@ pub struct Matches {
     /// Values of the Options that matched
     vals: Vec<Vec<Optval>>,
     /// Free string fragments
-    pub free: Vec<String>,
+    pub free: Vec<OsString>,
 }
 
 /// The type returned when the command line does not conform to the
@@ -761,8 +883,8 @@ impl Matches {
         })
     }
 
-    /// Returns the string argument supplied to one of several matching options or `None`.
-    pub fn opts_str(&self, names: &[String]) -> Option<String> {
+    /// Returns the argument supplied to one of several matching options or `None`.
+    pub fn opts_str_os(&self, names: &[String]) -> Option<OsString> {
         names.iter().filter_map(|nm| {
             match self.opt_val(&nm) {
                 Some(Val(s)) => Some(s),
@@ -771,11 +893,18 @@ impl Matches {
         }).next()
     }
 
+    /// Returns the string argument supplied to one of several matching options or `None`.
+    ///
+    /// Panics if the argument cannot be decoded to a string.
+    pub fn opts_str(&self, names: &[String]) -> Option<String> {
+        self.opts_str_os(names).map(|s| s.into_string().unwrap())
+    }
+
     /// Returns a vector of the arguments provided to all matches of the given
     /// option.
     ///
     /// Used when an option accepts multiple values.
-    pub fn opt_strs(&self, nm: &str) -> Vec<String> {
+    pub fn opt_strs_os(&self, nm: &str) -> Vec<OsString> {
         self.opt_vals(nm).into_iter().filter_map(|v| {
             match v {
                 Val(s) => Some(s),
@@ -784,12 +913,29 @@ impl Matches {
         }).collect()
     }
 
+    /// Returns a vector of the arguments provided to all matches of the given
+    /// option.
+    ///
+    /// Used when an option accepts multiple values.
+    ///
+    /// Panics if one of the arguments cannot be decoded to a string.
+    pub fn opt_strs(&self, nm: &str) -> Vec<String> {
+        self.opt_strs_os(nm).into_iter().map(|s| s.into_string().unwrap()).collect()
+    }
+
     /// Returns the string argument supplied to a matching option or `None`.
-    pub fn opt_str(&self, nm: &str) -> Option<String> {
+    pub fn opt_str_os(&self, nm: &str) -> Option<OsString> {
         match self.opt_val(nm) {
             Some(Val(s)) => Some(s),
             _ => None,
         }
+    }
+
+    /// Returns the string argument supplied to a matching option or `None`.
+    ///
+    /// Panics if the argument cannot be decoded to a string.
+    pub fn opt_str(&self, nm: &str) -> Option<String> {
+        self.opt_str_os(nm).map(|s| s.into_string().unwrap())
     }
 
 
@@ -798,18 +944,29 @@ impl Matches {
     /// Returns none if the option was not present, `def` if the option was
     /// present but no argument was provided, and the argument if the option was
     /// present and an argument was provided.
-    pub fn opt_default(&self, nm: &str, def: &str) -> Option<String> {
+    pub fn opt_default_os(&self, nm: &str, def: &OsStr) -> Option<OsString> {
         match self.opt_val(nm) {
             Some(Val(s)) => Some(s),
+            Some(_) => Some(def.to_owned()),
+            None => None,
+        }
+    }
+
+    /// Returns the matching string, a default, or none.
+    ///
+    /// Returns none if the option was not present, `def` if the option was
+    /// present but no argument was provided, and the argument if the option was
+    /// present and an argument was provided.
+    ///
+    /// Panics if the argument was provided but cannot be decoded to a string.
+    pub fn opt_default(&self, nm: &str, def: &str) -> Option<String> {
+        match self.opt_val(nm) {
+            Some(Val(s)) => Some(s.into_string().unwrap()),
             Some(_) => Some(def.to_string()),
             None => None,
         }
     }
 
-}
-
-fn is_arg(arg: &str) -> bool {
-    arg.as_bytes().get(0) == Some(&b'-') && arg.len() > 1
 }
 
 fn find_opt(opts: &[Opt], nm: Name) -> Option<usize> {
@@ -1222,7 +1379,7 @@ mod tests {
           Ok(ref m) => {
             // The next variable after the flag is just a free argument
 
-            assert!(m.free[0] == "20");
+            assert!(m.free[0].to_str().unwrap() == "20");
           }
           _ => panic!()
         }
@@ -1422,7 +1579,7 @@ mod tests {
         match Options::new().parse(&args) {
             Ok(ref m) => {
                 assert_eq!(m.free.len(), 1);
-                assert_eq!(m.free[0], "-");
+                assert_eq!(m.free[0].to_str().unwrap(), "-");
             }
             _ => panic!()
         }
@@ -1473,10 +1630,10 @@ mod tests {
                       .optopt("", "notpresent", "nothing to see here", "NOPE")
                       .parse(&args) {
           Ok(ref m) => {
-            assert!(m.free[0] == "prog");
-            assert!(m.free[1] == "free1");
+            assert!(m.free[0].to_str().unwrap() == "prog");
+            assert!(m.free[1].to_str().unwrap() == "free1");
             assert_eq!(m.opt_str("s").unwrap(), "20");
-            assert!(m.free[2] == "free2");
+            assert!(m.free[2].to_str().unwrap() == "free2");
             assert!((m.opt_present("flag")));
             assert_eq!(m.opt_str("long").unwrap(), "30");
             assert!((m.opt_present("f")));
@@ -1509,9 +1666,9 @@ mod tests {
             assert!(m.opt_present("a"));
             assert!(!m.opt_present("c"));
             assert_eq!(m.free.len(), 3);
-            assert_eq!(m.free[0], "b");
-            assert_eq!(m.free[1], "-c");
-            assert_eq!(m.free[2], "d");
+            assert_eq!(m.free[0].to_str().unwrap(), "b");
+            assert_eq!(m.free[1].to_str().unwrap(), "-c");
+            assert_eq!(m.free[2].to_str().unwrap(), "d");
           }
           _ => panic!()
         }
@@ -1534,9 +1691,9 @@ mod tests {
             assert!(m.opt_present("a"));
             assert!(!m.opt_present("c"));
             assert_eq!(m.free.len(), 3);
-            assert_eq!(m.free[0], "-");
-            assert_eq!(m.free[1], "-c");
-            assert_eq!(m.free[2], "d");
+            assert_eq!(m.free[0].to_str().unwrap(), "-");
+            assert_eq!(m.free[1].to_str().unwrap(), "-c");
+            assert_eq!(m.free[2].to_str().unwrap(), "d");
           }
           _ => panic!()
         }
