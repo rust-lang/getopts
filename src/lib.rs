@@ -304,9 +304,20 @@ impl Options {
 
         let mut vals = (0 .. n_opts).map(f).collect::<Vec<_>>();
         let mut free: Vec<String> = Vec::new();
-        let args = args.into_iter().map(|i| {
-            i.as_ref().to_str().unwrap().to_string()
-        }).collect::<Vec<_>>();
+        let args = {
+            let iter = args.into_iter();
+            let mut vec = Vec::with_capacity(iter.size_hint().0);
+            for i in iter {
+                match i.as_ref().to_str() {
+                    Some(s) => vec.push(s.to_owned()),
+                    None => {
+                        let readable = format!("{:?}", i.as_ref());
+                        return Err(Fail::UnrecognizedOption(readable))
+                    }
+                }
+            }
+            vec
+        };
         let l = args.len();
         let mut i = 0;
         while i < l {
