@@ -304,9 +304,11 @@ impl Options {
 
         let mut vals = (0 .. n_opts).map(f).collect::<Vec<_>>();
         let mut free: Vec<String> = Vec::new();
-        let args = args.into_iter().map(|i| {
-            i.as_ref().to_str().unwrap().to_string()
-        }).collect::<Vec<_>>();
+        let args = try!(args.into_iter().map(|i| {
+            i.as_ref().to_str().ok_or_else(|| {
+                Fail::UnrecognizedOption(format!("{:?}", i.as_ref()))
+            }).map(|s| s.to_owned())
+        }).collect::<::std::result::Result<Vec<_>, _>>());
         let l = args.len();
         let mut i = 0;
         while i < l {
@@ -366,7 +368,7 @@ impl Options {
 
                         if arg_follows {
                             let next = j + ch.len_utf8();
-                            if next < cur.len() {
+                            if next < curlen {
                                 i_arg = Some(cur[next..curlen].to_string());
                                 break;
                             }
