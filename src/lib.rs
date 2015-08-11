@@ -660,11 +660,11 @@ pub enum Fail {
 impl Error for Fail {
     fn description(&self) -> &str {
         match *self {
-            ArgumentMissing(_) => "Missing argument",
-            UnrecognizedOption(_) => "Unrecognized option",
-            OptionMissing(_) => "Missing option",
-            OptionDuplicated(_) => "Duplicated option",
-            UnexpectedArgument(_) => "Unexpected argument",
+            ArgumentMissing(_) => "missing argument",
+            UnrecognizedOption(_) => "unrecognized option",
+            OptionMissing(_) => "missing option",
+            OptionDuplicated(_) => "duplicated option",
+            UnexpectedArgument(_) => "unexpected argument",
         }
     }
 }
