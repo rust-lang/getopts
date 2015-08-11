@@ -114,6 +114,7 @@ use self::SplitWithinState::*;
 use self::Whitespace::*;
 use self::LengthLimit::*;
 
+use std::error::Error;
 use std::ffi::OsStr;
 use std::fmt;
 use std::iter::{repeat, IntoIterator};
@@ -654,6 +655,18 @@ pub enum Fail {
     OptionDuplicated(String),
     /// There's an argument being passed to a non-argument option.
     UnexpectedArgument(String),
+}
+
+impl Error for Fail {
+    fn description(&self) -> &str {
+        match *self {
+            ArgumentMissing(_) => "Missing argument",
+            UnrecognizedOption(_) => "Unrecognized option",
+            OptionMissing(_) => "Missing option",
+            OptionDuplicated(_) => "Duplicated option",
+            UnexpectedArgument(_) => "Unexpected argument",
+        }
+    }
 }
 
 /// The type of failure that occurred.
