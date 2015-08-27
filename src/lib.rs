@@ -120,14 +120,14 @@ use std::fmt;
 use std::iter::{repeat, IntoIterator};
 use std::result;
 
-/// A description of the options that a program can handle
+/// A description of the options that a program can handle.
 pub struct Options {
     grps: Vec<OptGroup>,
     parsing_style : ParsingStyle
 }
 
 impl Options {
-    /// Create a blank set of options
+    /// Create a blank set of options.
     pub fn new() -> Options {
         Options {
             grps: Vec::new(),
@@ -135,13 +135,13 @@ impl Options {
         }
     }
 
-    /// Set the parsing style
+    /// Set the parsing style.
     pub fn parsing_style(&mut self, style: ParsingStyle) -> &mut Options {
         self.parsing_style = style;
         self
     }
 
-    /// Create a generic option group, stating all parameters explicitly
+    /// Create a generic option group, stating all parameters explicitly.
     pub fn opt(&mut self, short_name: &str, long_name: &str, desc: &str,
                        hint: &str, hasarg: HasArg, occur: Occur) -> &mut Options {
         let len = short_name.len();
@@ -547,7 +547,7 @@ impl Options {
     }
 }
 
-/// What parsing style to use when parsing arguments
+/// What parsing style to use when parsing arguments.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ParsingStyle {
     /// Flags and "free" arguments can be freely inter-mixed.
@@ -808,9 +808,9 @@ impl Matches {
     }
 
 
-    /// Returns the matching string, a default, or none.
+    /// Returns the matching string, a default, or `None`.
     ///
-    /// Returns none if the option was not present, `def` if the option was
+    /// Returns `None` if the option was not present, `def` if the option was
     /// present but no argument was provided, and the argument if the option was
     /// present and an argument was provided.
     pub fn opt_default(&self, nm: &str, def: &str) -> Option<String> {
@@ -873,7 +873,7 @@ fn format_option(opt: &OptGroup) -> String {
         line.push('[');
     }
 
-    // Use short_name is possible, but fallback to long_name.
+    // Use short_name if possible, but fall back to long_name.
     if opt.short_name.len() > 0 {
         line.push('-');
         line.push_str(&opt.short_name);
