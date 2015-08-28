@@ -12,5 +12,5 @@ description = """
 getopts-like option parsing.
 """
 
-[dependencies]
+[dev-dependencies]
 log = "0.3"
