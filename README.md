@@ -3,7 +3,7 @@ getopts
 
 A Rust library for option parsing for CLI utilities.
 
-[![Build Status](https://travis-ci.org/rust-lang/getopts.svg?branch=master)](https://travis-ci.org/rust-lang/getopts)
+[![Build Status](https://travis-ci.org/rust-lang-nursery/getopts.svg?branch=master)](https://travis-ci.org/rust-lang-nursery/getopts)
 
 [Documentation](https://doc.rust-lang.org/getopts)
 
