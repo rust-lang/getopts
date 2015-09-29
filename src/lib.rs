@@ -309,6 +309,34 @@ impl Options {
         self
     }
 
+    /// TODO: write a documentation
+    pub fn description_header(&mut self, header: &str) -> &mut Options {
+        self.grps.push(OptGroup {
+            short_name: "".to_string(),
+            long_name: header.to_string(),
+            hint: "".to_string(),
+            desc: "".to_string(),
+            hasarg: No,
+            occur: Optional,
+            variant: Description,
+        });
+        self
+    }
+
+    /// TODO: write a documentation
+    pub fn description(&mut self, text: &str) -> &mut Options {
+        self.grps.push(OptGroup {
+            short_name: "".to_string(),
+            long_name: "".to_string(),
+            hint: "".to_string(),
+            desc: text.to_string(),
+            hasarg: No,
+            occur: Optional,
+            variant: Description,
+        });
+        self
+    }
+
     /// Parse command line arguments according to the provided options.
     ///
     /// On success returns `Ok(Matches)`. Use methods such as `opt_present`
@@ -493,6 +521,10 @@ impl Options {
                 return row;
             }
 
+            if variant == Description {
+                row = "".to_string();
+            }
+
             // short option
             match short_name.len() {
                 0 => {
@@ -518,9 +550,14 @@ impl Options {
             match long_name.len() {
                 0 => {}
                 _ => {
-                    row.push_str("--");
-                    row.push_str(&long_name);
-                    row.push(' ');
+                    if variant != Description {
+                        row.push_str("--");
+                        row.push_str(&long_name);
+                        row.push(' ');
+                    } else {
+                        row.push_str(&long_name);
+                        row.push(':');
+                    }
                 }
             }
 
@@ -537,9 +574,13 @@ impl Options {
 
             // FIXME: #5516 should be graphemes not codepoints
             // here we just need to indent the start of the description
+            let row_break = match variant {
+                Description => 8,
+                _ => 24,
+            };
             let rowlen = row.chars().count();
-            if rowlen < 24 {
-                for _ in 0 .. 24 - rowlen {
+            if rowlen < row_break {
+                for _ in 0 .. row_break - rowlen {
                     row.push(' ');
                 }
             } else {
@@ -554,10 +595,15 @@ impl Options {
                 desc_normalized_whitespace.push(' ');
             }
 
+            let break_col = match variant {
+                Description => 72,
+                _ => 54,
+            };
+
             // FIXME: #5516 should be graphemes not codepoints
             let mut desc_rows = Vec::new();
             each_split_within(&desc_normalized_whitespace,
-                              54,
+                              break_col,
                               |substr| {
                 desc_rows.push(substr.to_string());
                 true
@@ -565,7 +611,12 @@ impl Options {
 
             // FIXME: #5516 should be graphemes not codepoints
             // wrapped description
-            row.push_str(&desc_rows.connect(&desc_sep));
+            if variant != Description {
+                row.push_str(&desc_rows.connect(&desc_sep));
+            } else {
+                let desc_sep = format!("\n{}", repeat(" ").take(8).collect::<String>());
+                row.push_str(&desc_rows.connect(&desc_sep));
+            }
 
             row
         });
@@ -640,6 +691,17 @@ pub enum Variant {
     OptionGroup,
     /// A separator
     Separator,
+    /// The OptGroup presents a descriptive text
+    Description,
+}
+
+/// Description type
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum DescriptionType {
+    /// the content is a header. A ':' is automaticaly appended
+    Header,
+    /// Normal flowtext
+    Text,
 }
 
 /// One group of options, e.g., both `-h` and `--help`, along with
@@ -754,7 +816,7 @@ impl OptGroup {
             ..
         } = (*self).clone();
 
-        if variant == Separator {
+        if variant == Separator  || variant == Description {
             let opt = Opt {
                 name: Long((long_name)),
                 hasarg: hasarg,
@@ -1091,7 +1153,7 @@ fn test_split_within() {
 
 #[cfg(test)]
 mod tests {
-    use super::{HasArg, Name, Occur, Opt, Options, ParsingStyle};
+    use super::{HasArg, Name, Occur, Opt, Options, ParsingStyle, Variant};
     use super::Fail::*;
 
     // Tests for reqopt
@@ -1702,11 +1764,13 @@ mod tests {
             hasarg: HasArg::Yes,
             occur: Occur::Req,
             aliases: Vec::new(),
+            variant: Variant::OptionGroup,
         };
         short.aliases = vec!(Opt { name: Name::Short('b'),
                                 hasarg: HasArg::Yes,
                                 occur: Occur::Req,
-                                aliases: Vec::new() });
+                                aliases: Vec::new(),
+                                variant: Variant::OptionGroup });
         let mut opts = Options::new();
         opts.reqopt("b", "banana", "some bananas", "VAL");
         let ref verbose = opts.grps[0];
