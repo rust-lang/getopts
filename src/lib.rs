@@ -110,6 +110,7 @@ use self::HasArg::*;
 use self::Occur::*;
 use self::Fail::*;
 use self::Optval::*;
+use self::Variant::*;
 use self::SplitWithinState::*;
 use self::Whitespace::*;
 use self::LengthLimit::*;
@@ -152,7 +153,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: hasarg,
-            occur: occur
+            occur: occur,
+            variant: OptionGroup,
         });
         self
     }
@@ -172,7 +174,8 @@ impl Options {
             hint: "".to_string(),
             desc: desc.to_string(),
             hasarg: No,
-            occur: Optional
+            occur: Optional,
+            variant: OptionGroup,
         });
         self
     }
@@ -193,7 +196,8 @@ impl Options {
             hint: "".to_string(),
             desc: desc.to_string(),
             hasarg: No,
-            occur: Multi
+            occur: Multi,
+            variant: OptionGroup,
         });
         self
     }
@@ -215,7 +219,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Maybe,
-            occur: Optional
+            occur: Optional,
+            variant: OptionGroup,
         });
         self
     }
@@ -238,7 +243,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Multi
+            occur: Multi,
+            variant: OptionGroup,
         });
         self
     }
@@ -260,7 +266,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Optional
+            occur: Optional,
+            variant: OptionGroup,
         });
         self
     }
@@ -282,7 +289,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Req
+            occur: Req,
+            variant: OptionGroup,
         });
         self
     }
@@ -601,6 +609,15 @@ struct Opt {
     occur: Occur,
     /// Which options it aliases
     aliases: Vec<Opt>,
+    /// Its a option or only a variant?
+    variant: Variant,
+}
+
+/// type of Option group
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Variant {
+    /// A normal option
+    OptionGroup,
 }
 
 /// One group of options, e.g., both `-h` and `--help`, along with
@@ -618,7 +635,9 @@ struct OptGroup {
     /// Whether option has an argument
     hasarg: HasArg,
     /// How often it can occur
-    occur: Occur
+    occur: Occur,
+    /// Type of OptionGroup
+    variant: Variant,
 }
 
 /// Describes whether an option is given at all or has a value.
@@ -709,6 +728,7 @@ impl OptGroup {
             long_name,
             hasarg,
             occur,
+            variant,
             ..
         } = (*self).clone();
 
@@ -718,24 +738,28 @@ impl OptGroup {
                 name: Long((long_name)),
                 hasarg: hasarg,
                 occur: occur,
-                aliases: Vec::new()
+                aliases: Vec::new(),
+                variant: variant,
             },
             (1,0) => Opt {
                 name: Short(short_name.as_bytes()[0] as char),
                 hasarg: hasarg,
                 occur: occur,
-                aliases: Vec::new()
+                aliases: Vec::new(),
+                variant: variant,
             },
             (1,_) => Opt {
                 name: Long((long_name)),
                 hasarg: hasarg,
                 occur: occur,
+                variant: variant,
                 aliases: vec!(
                     Opt {
                         name: Short(short_name.as_bytes()[0] as char),
                         hasarg: hasarg,
                         occur:  occur,
-                        aliases: Vec::new()
+                        aliases: Vec::new(),
+                        variant: variant,
                     }
                 )
             },
