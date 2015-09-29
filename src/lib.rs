@@ -295,6 +295,20 @@ impl Options {
         self
     }
 
+    /// TODO: write a documentation
+    pub fn separator(&mut self) -> &mut Options {
+        self.grps.push(OptGroup {
+            short_name: "".to_string(),
+            long_name: "".to_string(),
+            hint: "".to_string(),
+            desc: "".to_string(),
+            hasarg: No,
+            occur: Optional,
+            variant: Separator,
+        });
+        self
+    }
+
     /// Parse command line arguments according to the provided options.
     ///
     /// On success returns `Ok(Matches)`. Use methods such as `opt_present`
@@ -469,9 +483,15 @@ impl Options {
                          hint,
                          desc,
                          hasarg,
+                         variant,
                          ..} = (*optref).clone();
 
             let mut row = "    ".to_string();
+
+            if variant == Separator {
+                row = "".to_string();
+                return row;
+            }
 
             // short option
             match short_name.len() {
@@ -618,6 +638,8 @@ struct Opt {
 pub enum Variant {
     /// A normal option
     OptionGroup,
+    /// A separator
+    Separator,
 }
 
 /// One group of options, e.g., both `-h` and `--help`, along with
@@ -731,6 +753,18 @@ impl OptGroup {
             variant,
             ..
         } = (*self).clone();
+
+        if variant == Separator {
+            let opt = Opt {
+                name: Long((long_name)),
+                hasarg: hasarg,
+                occur: occur,
+                aliases: Vec::new(),
+                variant: variant,
+            };
+
+            return opt;
+        }
 
         match (short_name.len(), long_name.len()) {
             (0,0) => panic!("this long-format option was given no name"),
