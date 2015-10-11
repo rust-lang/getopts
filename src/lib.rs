@@ -123,7 +123,8 @@ use std::result;
 /// A description of the options that a program can handle.
 pub struct Options {
     grps: Vec<OptGroup>,
-    parsing_style : ParsingStyle
+    parsing_style : ParsingStyle,
+    last_option_group: OptionGroup,
 }
 
 impl Options {
@@ -131,7 +132,8 @@ impl Options {
     pub fn new() -> Options {
         Options {
             grps: Vec::new(),
-            parsing_style: ParsingStyle::FloatingFrees
+            parsing_style: ParsingStyle::FloatingFrees,
+            last_option_group: OptionGroup::new(),
         }
     }
 
@@ -143,7 +145,7 @@ impl Options {
 
     /// Create a generic option group, stating all parameters explicitly.
     pub fn opt(&mut self, short_name: &str, long_name: &str, desc: &str,
-                       hint: &str, hasarg: HasArg, occur: Occur) -> &mut Options {
+                       hint: &str, hasarg: HasArg, occur: Occur, group: OptionGroup) -> &mut Options {
         let len = short_name.len();
         assert!(len == 1 || len == 0);
         self.grps.push(OptGroup {
@@ -152,8 +154,15 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: hasarg,
-            occur: occur
+            occur: occur,
+            group: group,
         });
+        self
+    }
+
+    /// Open a group of options
+    pub fn optgroup(&mut self, header: &str) -> &mut Options {
+        self.last_option_group = OptionGroup::new_with_header(header, self.last_option_group.id+1);
         self
     }
 
@@ -172,7 +181,8 @@ impl Options {
             hint: "".to_string(),
             desc: desc.to_string(),
             hasarg: No,
-            occur: Optional
+            occur: Optional,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -193,7 +203,8 @@ impl Options {
             hint: "".to_string(),
             desc: desc.to_string(),
             hasarg: No,
-            occur: Multi
+            occur: Multi,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -215,7 +226,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Maybe,
-            occur: Optional
+            occur: Optional,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -238,7 +250,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Multi
+            occur: Multi,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -260,7 +273,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Optional
+            occur: Optional,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -282,7 +296,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Req
+            occur: Req,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -508,15 +523,26 @@ impl Options {
             optref.short_name.len() > 0
         });
 
+        let mut last_optgroup_id = 0;
+
         let rows = self.grps.iter().map(|optref| {
             let OptGroup{short_name,
                          long_name,
                          hint,
                          desc,
                          hasarg,
+                         group,
                          ..} = (*optref).clone();
 
             let mut row = "    ".to_string();
+
+            if group.id != last_optgroup_id {
+                row.push_str(&"\n    ");
+                row.push_str(&group.header);
+                row.push_str(&":");
+                row.push_str(&"\n    ");
+                last_optgroup_id = group.id;
+            }
 
             // short option
             match short_name.len() {
@@ -631,6 +657,31 @@ struct Opt {
     aliases: Vec<Opt>,
 }
 
+/// Grouping of Options
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct OptionGroup {
+    /// identifier of this Optiongroup
+    id: u16,
+    /// Header of this OptionGroup
+    header: String,
+}
+
+impl OptionGroup {
+    fn new() -> OptionGroup {
+        OptionGroup {
+            header: "".to_string(),
+            id: 0,
+        }
+    }
+
+    fn new_with_header(header: &str, id: u16) -> OptionGroup {
+        OptionGroup {
+            header: header.to_string(),
+            id: id,
+        }
+    }
+}
+
 /// One group of options, e.g., both `-h` and `--help`, along with
 /// their shared description and properties.
 #[derive(Clone, PartialEq, Eq)]
@@ -646,7 +697,9 @@ struct OptGroup {
     /// Whether option has an argument
     hasarg: HasArg,
     /// How often it can occur
-    occur: Occur
+    occur: Occur,
+    /// OptionGrouping, is member of ...
+    group: OptionGroup,
 }
 
 /// Describes whether an option is given at all or has a value.
