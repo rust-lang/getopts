@@ -435,6 +435,32 @@ impl Options {
         })
     }
 
+    #[allow(deprecated)] // connect => join in 1.3
+    fn normalize_and_rowsplit(&self, start: usize, width: usize, text: String) -> String {
+        let text_sep = format!("\n{}", repeat(" ").take(start).collect::<String>());
+        // Normalize text to contain words separated by one space character
+        let mut text_normalized_whitespace = String::new();
+        for word in text.split(|c: char| c.is_whitespace())
+                        .filter(|s| !s.is_empty()) {
+            text_normalized_whitespace.push_str(word);
+            text_normalized_whitespace.push(' ');
+        }
+
+        // FIXME: #5516 should be graphemes not codepoints
+        let mut text_rows = Vec::new();
+        each_split_within(&text_normalized_whitespace,
+                          width,
+                          |substr| {
+            text_rows.push(substr.to_string());
+            true
+        });
+
+        let mut out = "".to_string();
+        out.push_str(&text_rows.connect(&text_sep));
+
+        return out;
+    }
+
     /// Derive a short one-line usage summary from a set of long options.
     #[allow(deprecated)] // connect => join in 1.3
     pub fn short_usage(&self, program_name: &str) -> String {
@@ -518,26 +544,11 @@ impl Options {
                 row.push_str(&desc_sep)
             }
 
-            // Normalize desc to contain words separated by one space character
-            let mut desc_normalized_whitespace = String::new();
-            for word in desc.split(|c: char| c.is_whitespace())
-                            .filter(|s| !s.is_empty()) {
-                desc_normalized_whitespace.push_str(word);
-                desc_normalized_whitespace.push(' ');
-            }
-
-            // FIXME: #5516 should be graphemes not codepoints
-            let mut desc_rows = Vec::new();
-            each_split_within(&desc_normalized_whitespace,
-                              54,
-                              |substr| {
-                desc_rows.push(substr.to_string());
-                true
-            });
+            let desc_normalized = self.normalize_and_rowsplit(24, 54, desc);
 
             // FIXME: #5516 should be graphemes not codepoints
             // wrapped description
-            row.push_str(&desc_rows.connect(&desc_sep));
+            row.push_str(&desc_normalized);
 
             row
         });
