@@ -461,6 +461,24 @@ impl Options {
         return out;
     }
 
+    fn fill_rowline(&self, begin: usize, text: String) -> String {
+        let text_sep = format!("\n{}", repeat(" ").take(begin).collect::<String>());
+        let mut out = text.clone();
+
+        // FIXME: #5516 should be graphemes not codepoints
+        // here we just need to indent the start of the description
+        let rowlen = out.chars().count();
+        if rowlen < begin {
+            for _ in 0 .. begin - rowlen {
+                out.push(' ');
+            }
+        } else {
+            out.push_str(&text_sep)
+        }
+
+        return out;
+    }
+
     /// Derive a short one-line usage summary from a set of long options.
     #[allow(deprecated)] // connect => join in 1.3
     pub fn short_usage(&self, program_name: &str) -> String {
@@ -475,8 +493,6 @@ impl Options {
     /// Derive a usage message from a set of options.
     #[allow(deprecated)] // connect => join in 1.3
     pub fn usage(&self, brief: &str) -> String {
-        let desc_sep = format!("\n{}", repeat(" ").take(24).collect::<String>());
-
         let any_short = self.grps.iter().any(|optref| {
             optref.short_name.len() > 0
         });
@@ -533,17 +549,7 @@ impl Options {
                 }
             }
 
-            // FIXME: #5516 should be graphemes not codepoints
-            // here we just need to indent the start of the description
-            let rowlen = row.chars().count();
-            if rowlen < 24 {
-                for _ in 0 .. 24 - rowlen {
-                    row.push(' ');
-                }
-            } else {
-                row.push_str(&desc_sep)
-            }
-
+            row = self.fill_rowline(24, row);
             let desc_normalized = self.normalize_and_rowsplit(24, 54, desc);
 
             // FIXME: #5516 should be graphemes not codepoints
