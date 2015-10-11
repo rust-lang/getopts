@@ -166,6 +166,12 @@ impl Options {
         self
     }
 
+    /// Open a group of options
+    pub fn optgroup_with_description(&mut self, header: &str, description: &str) -> &mut Options {
+        self.last_option_group = OptionGroup::new_with_header_and_description(header, self.last_option_group.id+1, description);
+        self
+    }
+
     /// Create a long option that is optional and does not take an argument.
     ///
     /// * `short_name` - e.g. `"h"` for a `-h` option, or `""` for none
@@ -541,6 +547,10 @@ impl Options {
                 row.push_str(&group.header);
                 row.push_str(&":");
                 row.push_str(&"\n    ");
+                if group.description.len() > 0 {
+                    row.push_str(&self.normalize_and_rowsplit(4, 72, group.description));
+                    row.push_str(&"\n\n    ");
+                }
                 last_optgroup_id = group.id;
             }
 
@@ -664,6 +674,8 @@ pub struct OptionGroup {
     id: u16,
     /// Header of this OptionGroup
     header: String,
+    /// Some descriptive text
+    description: String,
 }
 
 impl OptionGroup {
@@ -671,6 +683,7 @@ impl OptionGroup {
         OptionGroup {
             header: "".to_string(),
             id: 0,
+            description: "".to_string(),
         }
     }
 
@@ -678,6 +691,15 @@ impl OptionGroup {
         OptionGroup {
             header: header.to_string(),
             id: id,
+            description: "".to_string(),
+        }
+    }
+
+    fn new_with_header_and_description(header: &str, id: u16, description: &str) -> OptionGroup {
+        OptionGroup {
+            header: header.to_string(),
+            id: id,
+            description: description.to_string(),
         }
     }
 }
