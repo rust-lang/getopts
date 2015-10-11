@@ -465,9 +465,20 @@ impl Options {
         let text_sep = format!("\n{}", repeat(" ").take(begin).collect::<String>());
         let mut out = text.clone();
 
+        let pos = match out.rfind('\n') {
+            Some(p) => p,
+            None => 0,
+        };
+
+        let outcount = out.chars().count();
+
         // FIXME: #5516 should be graphemes not codepoints
         // here we just need to indent the start of the description
-        let rowlen = out.chars().count();
+        let rowlen = match pos > 0 && pos < outcount {
+            false => outcount,
+            true => outcount - pos - 1,
+        };
+
         if rowlen < begin {
             for _ in 0 .. begin - rowlen {
                 out.push(' ');
