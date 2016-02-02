@@ -145,7 +145,7 @@ impl Options {
     pub fn opt(&mut self, short_name: &str, long_name: &str, desc: &str,
                        hint: &str, hasarg: HasArg, occur: Occur) -> &mut Options {
         let len = short_name.len();
-        assert!(len == 1 || len == 0);
+        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -165,7 +165,7 @@ impl Options {
     pub fn optflag(&mut self, short_name: &str, long_name: &str, desc: &str)
                            -> &mut Options {
         let len = short_name.len();
-        assert!(len == 1 || len == 0);
+        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -186,7 +186,7 @@ impl Options {
     pub fn optflagmulti(&mut self, short_name: &str, long_name: &str, desc: &str)
                                 -> &mut Options {
         let len = short_name.len();
-        assert!(len == 1 || len == 0);
+        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -208,7 +208,7 @@ impl Options {
     pub fn optflagopt(&mut self, short_name: &str, long_name: &str, desc: &str,
                               hint: &str) -> &mut Options {
         let len = short_name.len();
-        assert!(len == 1 || len == 0);
+        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -231,7 +231,7 @@ impl Options {
     pub fn optmulti(&mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
                             -> &mut Options {
         let len = short_name.len();
-        assert!(len == 1 || len == 0);
+        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -253,7 +253,7 @@ impl Options {
     pub fn optopt(&mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
                           -> &mut Options {
         let len = short_name.len();
-        assert!(len == 1 || len == 0);
+        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -275,7 +275,7 @@ impl Options {
     pub fn reqopt(&mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
                           -> &mut Options {
         let len = short_name.len();
-        assert!(len == 1 || len == 0);
+        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
