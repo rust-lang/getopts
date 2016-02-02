@@ -123,7 +123,8 @@ use std::result;
 /// A description of the options that a program can handle.
 pub struct Options {
     grps: Vec<OptGroup>,
-    parsing_style : ParsingStyle
+    parsing_style : ParsingStyle,
+    last_option_group: OptionGroup,
 }
 
 impl Options {
@@ -131,7 +132,8 @@ impl Options {
     pub fn new() -> Options {
         Options {
             grps: Vec::new(),
-            parsing_style: ParsingStyle::FloatingFrees
+            parsing_style: ParsingStyle::FloatingFrees,
+            last_option_group: OptionGroup::new(),
         }
     }
 
@@ -143,7 +145,7 @@ impl Options {
 
     /// Create a generic option group, stating all parameters explicitly.
     pub fn opt(&mut self, short_name: &str, long_name: &str, desc: &str,
-                       hint: &str, hasarg: HasArg, occur: Occur) -> &mut Options {
+                       hint: &str, hasarg: HasArg, occur: Occur, group: OptionGroup) -> &mut Options {
         let len = short_name.len();
         assert!(len == 1 || len == 0);
         self.grps.push(OptGroup {
@@ -152,8 +154,21 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: hasarg,
-            occur: occur
+            occur: occur,
+            group: group,
         });
+        self
+    }
+
+    /// Open a group of options
+    pub fn optgroup(&mut self, header: &str) -> &mut Options {
+        self.last_option_group = OptionGroup::new_with_header(header, self.last_option_group.id+1);
+        self
+    }
+
+    /// Open a group of options
+    pub fn optgroup_with_description(&mut self, header: &str, description: &str) -> &mut Options {
+        self.last_option_group = OptionGroup::new_with_header_and_description(header, self.last_option_group.id+1, description);
         self
     }
 
@@ -172,7 +187,8 @@ impl Options {
             hint: "".to_string(),
             desc: desc.to_string(),
             hasarg: No,
-            occur: Optional
+            occur: Optional,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -193,7 +209,8 @@ impl Options {
             hint: "".to_string(),
             desc: desc.to_string(),
             hasarg: No,
-            occur: Multi
+            occur: Multi,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -215,7 +232,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Maybe,
-            occur: Optional
+            occur: Optional,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -238,7 +256,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Multi
+            occur: Multi,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -260,7 +279,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Optional
+            occur: Optional,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -282,7 +302,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Req
+            occur: Req,
+            group: self.last_option_group.clone(),
         });
         self
     }
@@ -435,6 +456,61 @@ impl Options {
         })
     }
 
+    #[allow(deprecated)] // connect => join in 1.3
+    fn normalize_and_rowsplit(&self, start: usize, width: usize, text: String) -> String {
+        let text_sep = format!("\n{}", repeat(" ").take(start).collect::<String>());
+        // Normalize text to contain words separated by one space character
+        let mut text_normalized_whitespace = String::new();
+        for word in text.split(|c: char| c.is_whitespace())
+                        .filter(|s| !s.is_empty()) {
+            text_normalized_whitespace.push_str(word);
+            text_normalized_whitespace.push(' ');
+        }
+
+        // FIXME: #5516 should be graphemes not codepoints
+        let mut text_rows = Vec::new();
+        each_split_within(&text_normalized_whitespace,
+                          width,
+                          |substr| {
+            text_rows.push(substr.to_string());
+            true
+        });
+
+        let mut out = "".to_string();
+        out.push_str(&text_rows.connect(&text_sep));
+
+        return out;
+    }
+
+    fn fill_rowline(&self, begin: usize, text: String) -> String {
+        let text_sep = format!("\n{}", repeat(" ").take(begin).collect::<String>());
+        let mut out = text.clone();
+
+        let pos = match out.rfind('\n') {
+            Some(p) => p,
+            None => 0,
+        };
+
+        let outcount = out.chars().count();
+
+        // FIXME: #5516 should be graphemes not codepoints
+        // here we just need to indent the start of the description
+        let rowlen = match pos > 0 && pos < outcount {
+            false => outcount,
+            true => outcount - pos - 1,
+        };
+
+        if rowlen < begin {
+            for _ in 0 .. begin - rowlen {
+                out.push(' ');
+            }
+        } else {
+            out.push_str(&text_sep)
+        }
+
+        return out;
+    }
+
     /// Derive a short one-line usage summary from a set of long options.
     #[allow(deprecated)] // connect => join in 1.3
     pub fn short_usage(&self, program_name: &str) -> String {
@@ -449,11 +525,11 @@ impl Options {
     /// Derive a usage message from a set of options.
     #[allow(deprecated)] // connect => join in 1.3
     pub fn usage(&self, brief: &str) -> String {
-        let desc_sep = format!("\n{}", repeat(" ").take(24).collect::<String>());
-
         let any_short = self.grps.iter().any(|optref| {
             optref.short_name.len() > 0
         });
+
+        let mut last_optgroup_id = 0;
 
         let rows = self.grps.iter().map(|optref| {
             let OptGroup{short_name,
@@ -461,9 +537,22 @@ impl Options {
                          hint,
                          desc,
                          hasarg,
+                         group,
                          ..} = (*optref).clone();
 
             let mut row = "    ".to_string();
+
+            if group.id != last_optgroup_id {
+                row.push_str(&"\n    ");
+                row.push_str(&group.header);
+                row.push_str(&":");
+                row.push_str(&"\n    ");
+                if group.description.len() > 0 {
+                    row.push_str(&self.normalize_and_rowsplit(4, 72, group.description));
+                    row.push_str(&"\n\n    ");
+                }
+                last_optgroup_id = group.id;
+            }
 
             // short option
             match short_name.len() {
@@ -507,37 +596,12 @@ impl Options {
                 }
             }
 
-            // FIXME: #5516 should be graphemes not codepoints
-            // here we just need to indent the start of the description
-            let rowlen = row.chars().count();
-            if rowlen < 24 {
-                for _ in 0 .. 24 - rowlen {
-                    row.push(' ');
-                }
-            } else {
-                row.push_str(&desc_sep)
-            }
-
-            // Normalize desc to contain words separated by one space character
-            let mut desc_normalized_whitespace = String::new();
-            for word in desc.split(|c: char| c.is_whitespace())
-                            .filter(|s| !s.is_empty()) {
-                desc_normalized_whitespace.push_str(word);
-                desc_normalized_whitespace.push(' ');
-            }
-
-            // FIXME: #5516 should be graphemes not codepoints
-            let mut desc_rows = Vec::new();
-            each_split_within(&desc_normalized_whitespace,
-                              54,
-                              |substr| {
-                desc_rows.push(substr.to_string());
-                true
-            });
+            row = self.fill_rowline(24, row);
+            let desc_normalized = self.normalize_and_rowsplit(24, 54, desc);
 
             // FIXME: #5516 should be graphemes not codepoints
             // wrapped description
-            row.push_str(&desc_rows.connect(&desc_sep));
+            row.push_str(&desc_normalized);
 
             row
         });
@@ -603,6 +667,43 @@ struct Opt {
     aliases: Vec<Opt>,
 }
 
+/// Grouping of Options
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct OptionGroup {
+    /// identifier of this Optiongroup
+    id: u16,
+    /// Header of this OptionGroup
+    header: String,
+    /// Some descriptive text
+    description: String,
+}
+
+impl OptionGroup {
+    fn new() -> OptionGroup {
+        OptionGroup {
+            header: "".to_string(),
+            id: 0,
+            description: "".to_string(),
+        }
+    }
+
+    fn new_with_header(header: &str, id: u16) -> OptionGroup {
+        OptionGroup {
+            header: header.to_string(),
+            id: id,
+            description: "".to_string(),
+        }
+    }
+
+    fn new_with_header_and_description(header: &str, id: u16, description: &str) -> OptionGroup {
+        OptionGroup {
+            header: header.to_string(),
+            id: id,
+            description: description.to_string(),
+        }
+    }
+}
+
 /// One group of options, e.g., both `-h` and `--help`, along with
 /// their shared description and properties.
 #[derive(Clone, PartialEq, Eq)]
@@ -618,7 +719,9 @@ struct OptGroup {
     /// Whether option has an argument
     hasarg: HasArg,
     /// How often it can occur
-    occur: Occur
+    occur: Occur,
+    /// OptionGrouping, is member of ...
+    group: OptionGroup,
 }
 
 /// Describes whether an option is given at all or has a value.
