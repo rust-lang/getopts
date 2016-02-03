@@ -144,8 +144,7 @@ impl Options {
     /// Create a generic option group, stating all parameters explicitly.
     pub fn opt(&mut self, short_name: &str, long_name: &str, desc: &str,
                        hint: &str, hasarg: HasArg, occur: Occur) -> &mut Options {
-        let len = short_name.len();
-        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
+        validate_shortname(short_name);
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -164,8 +163,7 @@ impl Options {
     /// * `desc` - Description for usage help
     pub fn optflag(&mut self, short_name: &str, long_name: &str, desc: &str)
                            -> &mut Options {
-        let len = short_name.len();
-        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
+        validate_shortname(short_name);
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -185,8 +183,7 @@ impl Options {
     /// * `desc` - Description for usage help
     pub fn optflagmulti(&mut self, short_name: &str, long_name: &str, desc: &str)
                                 -> &mut Options {
-        let len = short_name.len();
-        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
+        validate_shortname(short_name);
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -207,8 +204,7 @@ impl Options {
     ///   e.g. `"FILE"` for a `-o FILE` option
     pub fn optflagopt(&mut self, short_name: &str, long_name: &str, desc: &str,
                               hint: &str) -> &mut Options {
-        let len = short_name.len();
-        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
+        validate_shortname(short_name);
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -230,8 +226,7 @@ impl Options {
     ///   e.g. `"FILE"` for a `-o FILE` option
     pub fn optmulti(&mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
                             -> &mut Options {
-        let len = short_name.len();
-        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
+        validate_shortname(short_name);
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -252,8 +247,7 @@ impl Options {
     ///   e.g. `"FILE"` for a `-o FILE` option
     pub fn optopt(&mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
                           -> &mut Options {
-        let len = short_name.len();
-        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
+        validate_shortname(short_name);
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -274,8 +268,7 @@ impl Options {
     ///   e.g. `"FILE"` for a `-o FILE` option
     pub fn reqopt(&mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
                           -> &mut Options {
-        let len = short_name.len();
-        assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
+        validate_shortname(short_name);
         self.grps.push(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
@@ -545,6 +538,11 @@ impl Options {
         format!("{}\n\nOptions:\n{}\n", brief,
                 rows.collect::<Vec<String>>().connect("\n"))
     }
+}
+
+fn validate_shortname(short_name: &str) {
+    let len = short_name.len();
+    assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
 }
 
 /// What parsing style to use when parsing arguments.
