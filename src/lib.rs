@@ -542,7 +542,9 @@ impl Options {
 
 fn validate_shortname(short_name: &str) {
     let len = short_name.len();
-    assert!(len == 1 || len == 0, "The short_name (first argument) should be a single character, or an empty string for none");
+    assert!(len == 1 || len == 0,
+            "the short_name (first argument) should be a single character, \
+             or an empty string for none");
 }
 
 /// What parsing style to use when parsing arguments.
