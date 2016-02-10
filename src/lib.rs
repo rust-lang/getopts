@@ -748,7 +748,7 @@ impl Matches {
     fn opt_vals(&self, nm: &str) -> Vec<Optval> {
         match find_opt(&self.opts, Name::from_str(nm)) {
             Some(id) => self.vals[id].clone(),
-            None => panic!("No option '{}' defined", nm)
+            None => vec![]
         }
     }
 
