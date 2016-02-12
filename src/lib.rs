@@ -755,6 +755,10 @@ impl Matches {
     fn opt_val(&self, nm: &str) -> Option<Optval> {
         self.opt_vals(nm).into_iter().next()
     }
+    /// Returns true if an option was defined
+    pub fn is_opt_defined(&self, nm: &str) -> bool {
+        find_opt(&self.opts, Name::from_str(nm)).is_some()
+    }
 
     /// Returns true if an option was matched.
     pub fn opt_present(&self, nm: &str) -> bool {
