@@ -748,7 +748,7 @@ impl Matches {
     fn opt_vals(&self, nm: &str) -> Vec<Optval> {
         match find_opt(&self.opts, Name::from_str(nm)) {
             Some(id) => self.vals[id].clone(),
-            None => Vec::new()
+            None => panic!("No option '{}' defined", nm)
         }
     }
 
@@ -756,7 +756,7 @@ impl Matches {
         self.opt_vals(nm).into_iter().next()
     }
     /// Returns true if an option was defined
-    pub fn is_opt_defined(&self, nm: &str) -> bool {
+    pub fn opt_defined(&self, nm: &str) -> bool {
         find_opt(&self.opts, Name::from_str(nm)).is_some()
     }
 
