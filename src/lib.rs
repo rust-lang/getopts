@@ -755,6 +755,10 @@ impl Matches {
     fn opt_val(&self, nm: &str) -> Option<Optval> {
         self.opt_vals(nm).into_iter().next()
     }
+    /// Returns true if an option was defined
+    pub fn opt_defined(&self, nm: &str) -> bool {
+        find_opt(&self.opts, Name::from_str(nm)).is_some()
+    }
 
     /// Returns true if an option was matched.
     pub fn opt_present(&self, nm: &str) -> bool {
@@ -1812,7 +1816,15 @@ Options:
         debug!("generated: <<{}>>", generated_usage);
         assert_eq!(generated_usage, expected);
     }
-
+    #[test]
+    fn test_nonexistant_opt() {
+        let mut opts = Options::new();
+        opts.optflag("b", "bar", "Desc");
+        let args: Vec<String> = Vec::new();
+        let matches = opts.parse(&args).unwrap();
+        assert_eq!(matches.opt_defined("foo"), false);
+        assert_eq!(matches.opt_defined("bar"), true);
+    }
     #[test]
     fn test_args_with_equals() {
         let mut opts = Options::new();
