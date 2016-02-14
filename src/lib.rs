@@ -1816,7 +1816,15 @@ Options:
         debug!("generated: <<{}>>", generated_usage);
         assert_eq!(generated_usage, expected);
     }
-
+    #[test]
+    fn test_nonexistant_opt() {
+        let mut opts = Options::new();
+        opts.optflag("b", "bar", "Desc");
+        let args: Vec<String> = Vec::new();
+        let matches = opts.parse(&args).unwrap();
+        assert_eq!(matches.opt_defined("foo"), false);
+        assert_eq!(matches.opt_defined("bar"), true);
+    }
     #[test]
     fn test_args_with_equals() {
         let mut opts = Options::new();
