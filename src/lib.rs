@@ -928,16 +928,12 @@ enum LengthLimit {
 
 
 /// Splits a string into substrings with possibly internal whitespace,
-/// each of them at most `lim` bytes long. The substrings have leading and trailing
-/// whitespace removed, and are only cut at whitespace boundaries.
+/// each of them at most `lim` bytes long, if possible. The substrings
+/// have leading and trailing whitespace removed, and are only cut at
+/// whitespace boundaries.
 ///
 /// Note: Function was moved here from `std::str` because this module is the only place that
 /// uses it, and because it was too specific for a general string function.
-///
-/// # Panics
-///
-/// Panics during iteration if the string contains a non-whitespace
-/// sequence longer than the limit.
 fn each_split_within<'a, F>(ss: &'a str, lim: usize, mut it: F)
                             -> bool where F: FnMut(&'a str) -> bool {
     // Just for fun, let's write this as a state machine:
@@ -965,9 +961,11 @@ fn each_split_within<'a, F>(ss: &'a str, lim: usize, mut it: F)
             (A, Cr, _)        => { slice_start = i; last_start = i; B }
 
             (B, Cr, UnderLim) => { B }
-            (B, Cr, OverLim)  if (i - last_start + 1) > lim
-                            => panic!("word starting with {} longer than limit!",
-                                      &ss[last_start..i + 1]),
+            (B, Cr, OverLim)  if (i - last_start + 1) > lim => {
+                // A single word has gone over the limit.  In this
+                // case we just accept that the word will be too long.
+                B
+            }
             (B, Cr, OverLim)  => {
                 *cont = it(&ss[slice_start..last_end]);
                 slice_start = last_start;
@@ -1712,6 +1710,8 @@ Options:
             "This is a long description which won't be wrapped..+.."); // 54
         opts.optflag("a", "apple",
             "This is a long description which _will_ be wrapped..+..");
+        opts.optflag("b", "banana",
+            "HereWeNeedOneSingleWordThatIsLongerThanTheWrappingLengthAndThisIsIt");
 
         let expected =
 "Usage: fruits
@@ -1720,6 +1720,7 @@ Options:
     -k, --kiwi          This is a long description which won't be wrapped..+..
     -a, --apple         This is a long description which _will_ be
                         wrapped..+..
+    -b, --banana        HereWeNeedOneSingleWordThatIsLongerThanTheWrappingLengthAndThisIsIt
 ";
 
         let usage = opts.usage("Usage: fruits");
