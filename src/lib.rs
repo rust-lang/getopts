@@ -143,7 +143,7 @@ impl Options {
         self
     }
 
-    /// Select the "long options only" mode.
+    /// Set or clear "long options only" mode.
     ///
     /// In "long options only" mode, short options cannot be clustered
     /// together, and long options can be given with either a single
@@ -151,10 +151,8 @@ impl Options {
     /// of "-a=b"; in the ordinary mode this will parse a short option
     /// "-a" with argument "=b"; whereas in long-options-only mode the
     /// argument will be simply "b".
-    ///
-    /// Once this mode is set on an Options object, it cannot be unset.
-    pub fn long_only(&mut self) -> &mut Options {
-        self.long_only = true;
+    pub fn long_only(&mut self, long_only: bool) -> &mut Options {
+        self.long_only = long_only;
         self
     }
 
@@ -1875,7 +1873,7 @@ Options:
     #[test]
     fn test_long_only_usage() {
         let mut opts = Options::new();
-        opts.long_only();
+        opts.long_only(true);
         opts.optflag("k", "kiwi", "Description");
         opts.optflag("a", "apple", "Description");
 
@@ -1897,7 +1895,7 @@ Options:
     #[test]
     fn test_long_only_mode() {
         let mut opts = Options::new();
-        opts.long_only();
+        opts.long_only(true);
         opts.optopt("a", "apple", "Description", "X");
         opts.optopt("b", "banana", "Description", "X");
         opts.optopt("c", "currant", "Description", "X");
@@ -1922,7 +1920,7 @@ Options:
     #[test]
     fn test_long_only_mode_no_short_parse() {
         let mut opts = Options::new();
-        opts.long_only();
+        opts.long_only(true);
         opts.optflag("h", "help", "Description");
         opts.optflag("i", "ignore", "Description");
         opts.optflag("", "hi", "Description");
@@ -1935,6 +1933,28 @@ Options:
         assert!(matches.opt_present("hi"));
         assert!(!matches.opt_present("h"));
         assert!(!matches.opt_present("i"));
+    }
+
+    #[test]
+    fn test_normal_mode_no_long_parse() {
+        // Like test_long_only_mode_no_short_parse, but we make sure
+        // that long_only can be disabled, and the right thing
+        // happens.
+        let mut opts = Options::new();
+        opts.long_only(true);
+        opts.optflag("h", "help", "Description");
+        opts.optflag("i", "ignore", "Description");
+        opts.optflag("", "hi", "Description");
+        opts.long_only(false);
+
+        let args = vec!("-hi");
+        let matches = &match opts.parse(&args) {
+            Ok(m) => m,
+            Err(e) => panic!("{}", e)
+        };
+        assert!(!matches.opt_present("hi"));
+        assert!(matches.opt_present("h"));
+        assert!(matches.opt_present("i"));
     }
 
     #[test]
