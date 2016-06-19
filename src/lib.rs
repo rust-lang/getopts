@@ -110,6 +110,7 @@ use self::HasArg::*;
 use self::Occur::*;
 use self::Fail::*;
 use self::Optval::*;
+use self::Variant::*;
 use self::SplitWithinState::*;
 use self::Whitespace::*;
 use self::LengthLimit::*;
@@ -151,7 +152,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: hasarg,
-            occur: occur
+            occur: occur,
+            variant: OptionGroup,
         });
         self
     }
@@ -170,7 +172,8 @@ impl Options {
             hint: "".to_string(),
             desc: desc.to_string(),
             hasarg: No,
-            occur: Optional
+            occur: Optional,
+            variant: OptionGroup,
         });
         self
     }
@@ -190,7 +193,8 @@ impl Options {
             hint: "".to_string(),
             desc: desc.to_string(),
             hasarg: No,
-            occur: Multi
+            occur: Multi,
+            variant: OptionGroup,
         });
         self
     }
@@ -211,7 +215,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Maybe,
-            occur: Optional
+            occur: Optional,
+            variant: OptionGroup,
         });
         self
     }
@@ -233,7 +238,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Multi
+            occur: Multi,
+            variant: OptionGroup,
         });
         self
     }
@@ -254,7 +260,8 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Optional
+            occur: Optional,
+            variant: OptionGroup,
         });
         self
     }
@@ -275,7 +282,50 @@ impl Options {
             hint: hint.to_string(),
             desc: desc.to_string(),
             hasarg: Yes,
-            occur: Req
+            occur: Req,
+            variant: OptionGroup,
+        });
+        self
+    }
+
+    /// TODO: write a documentation
+    pub fn separator(&mut self) -> &mut Options {
+        self.grps.push(OptGroup {
+            short_name: "".to_string(),
+            long_name: "".to_string(),
+            hint: "".to_string(),
+            desc: "".to_string(),
+            hasarg: No,
+            occur: Optional,
+            variant: Separator,
+        });
+        self
+    }
+
+    /// TODO: write a documentation
+    pub fn description_header(&mut self, header: &str) -> &mut Options {
+        self.grps.push(OptGroup {
+            short_name: "".to_string(),
+            long_name: header.to_string(),
+            hint: "".to_string(),
+            desc: "".to_string(),
+            hasarg: No,
+            occur: Optional,
+            variant: Description,
+        });
+        self
+    }
+
+    /// TODO: write a documentation
+    pub fn description(&mut self, text: &str) -> &mut Options {
+        self.grps.push(OptGroup {
+            short_name: "".to_string(),
+            long_name: "".to_string(),
+            hint: "".to_string(),
+            desc: text.to_string(),
+            hasarg: No,
+            occur: Optional,
+            variant: Description,
         });
         self
     }
@@ -454,9 +504,19 @@ impl Options {
                          hint,
                          desc,
                          hasarg,
+                         variant,
                          ..} = (*optref).clone();
 
             let mut row = "    ".to_string();
+
+            if variant == Separator {
+                row = "".to_string();
+                return row;
+            }
+
+            if variant == Description {
+                row = "".to_string();
+            }
 
             // short option
             match short_name.len() {
@@ -483,9 +543,14 @@ impl Options {
             match long_name.len() {
                 0 => {}
                 _ => {
-                    row.push_str("--");
-                    row.push_str(&long_name);
-                    row.push(' ');
+                    if variant != Description {
+                        row.push_str("--");
+                        row.push_str(&long_name);
+                        row.push(' ');
+                    } else {
+                        row.push_str(&long_name);
+                        row.push(':');
+                    }
                 }
             }
 
@@ -502,9 +567,13 @@ impl Options {
 
             // FIXME: #5516 should be graphemes not codepoints
             // here we just need to indent the start of the description
+            let row_break = match variant {
+                Description => 8,
+                _ => 24,
+            };
             let rowlen = row.chars().count();
-            if rowlen < 24 {
-                for _ in 0 .. 24 - rowlen {
+            if rowlen < row_break {
+                for _ in 0 .. row_break - rowlen {
                     row.push(' ');
                 }
             } else {
@@ -519,10 +588,15 @@ impl Options {
                 desc_normalized_whitespace.push(' ');
             }
 
+            let break_col = match variant {
+                Description => 72,
+                _ => 54,
+            };
+
             // FIXME: #5516 should be graphemes not codepoints
             let mut desc_rows = Vec::new();
             each_split_within(&desc_normalized_whitespace,
-                              54,
+                              break_col,
                               |substr| {
                 desc_rows.push(substr.to_string());
                 true
@@ -530,7 +604,12 @@ impl Options {
 
             // FIXME: #5516 should be graphemes not codepoints
             // wrapped description
-            row.push_str(&desc_rows.connect(&desc_sep));
+            if variant != Description {
+                row.push_str(&desc_rows.connect(&desc_sep));
+            } else {
+                let desc_sep = format!("\n{}", repeat(" ").take(8).collect::<String>());
+                row.push_str(&desc_rows.connect(&desc_sep));
+            }
 
             row
         });
@@ -601,6 +680,28 @@ struct Opt {
     occur: Occur,
     /// Which options it aliases
     aliases: Vec<Opt>,
+    /// Its a option or only a variant?
+    variant: Variant,
+}
+
+/// type of Option group
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Variant {
+    /// A normal option
+    OptionGroup,
+    /// A separator
+    Separator,
+    /// The OptGroup presents a descriptive text
+    Description,
+}
+
+/// Description type
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum DescriptionType {
+    /// the content is a header. A ':' is automaticaly appended
+    Header,
+    /// Normal flowtext
+    Text,
 }
 
 /// One group of options, e.g., both `-h` and `--help`, along with
@@ -618,7 +719,9 @@ struct OptGroup {
     /// Whether option has an argument
     hasarg: HasArg,
     /// How often it can occur
-    occur: Occur
+    occur: Occur,
+    /// Type of OptionGroup
+    variant: Variant,
 }
 
 /// Describes whether an option is given at all or has a value.
@@ -709,8 +812,21 @@ impl OptGroup {
             long_name,
             hasarg,
             occur,
+            variant,
             ..
         } = (*self).clone();
+
+        if variant == Separator  || variant == Description {
+            let opt = Opt {
+                name: Long((long_name)),
+                hasarg: hasarg,
+                occur: occur,
+                aliases: Vec::new(),
+                variant: variant,
+            };
+
+            return opt;
+        }
 
         match (short_name.len(), long_name.len()) {
             (0,0) => panic!("this long-format option was given no name"),
@@ -718,24 +834,28 @@ impl OptGroup {
                 name: Long((long_name)),
                 hasarg: hasarg,
                 occur: occur,
-                aliases: Vec::new()
+                aliases: Vec::new(),
+                variant: variant,
             },
             (1,0) => Opt {
                 name: Short(short_name.as_bytes()[0] as char),
                 hasarg: hasarg,
                 occur: occur,
-                aliases: Vec::new()
+                aliases: Vec::new(),
+                variant: variant,
             },
             (1,_) => Opt {
                 name: Long((long_name)),
                 hasarg: hasarg,
                 occur: occur,
+                variant: variant,
                 aliases: vec!(
                     Opt {
                         name: Short(short_name.as_bytes()[0] as char),
                         hasarg: hasarg,
                         occur:  occur,
-                        aliases: Vec::new()
+                        aliases: Vec::new(),
+                        variant: variant,
                     }
                 )
             },
@@ -1035,7 +1155,7 @@ fn test_split_within() {
 
 #[cfg(test)]
 mod tests {
-    use super::{HasArg, Name, Occur, Opt, Options, ParsingStyle};
+    use super::{HasArg, Name, Occur, Opt, Options, ParsingStyle, Variant};
     use super::Fail::*;
 
     // Tests for reqopt
@@ -1646,11 +1766,13 @@ mod tests {
             hasarg: HasArg::Yes,
             occur: Occur::Req,
             aliases: Vec::new(),
+            variant: Variant::OptionGroup,
         };
         short.aliases = vec!(Opt { name: Name::Short('b'),
                                 hasarg: HasArg::Yes,
                                 occur: Occur::Req,
-                                aliases: Vec::new() });
+                                aliases: Vec::new(),
+                                variant: Variant::OptionGroup });
         let mut opts = Options::new();
         opts.reqopt("b", "banana", "some bananas", "VAL");
         let ref verbose = opts.grps[0];
