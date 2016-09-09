@@ -697,17 +697,6 @@ impl Error for Fail {
     }
 }
 
-/// The type of failure that occurred.
-#[derive(Clone, Copy, PartialEq, Eq)]
-#[allow(missing_docs)]
-pub enum FailType {
-    ArgumentMissing_,
-    UnrecognizedOption_,
-    OptionMissing_,
-    OptionDuplicated_,
-    UnexpectedArgument_,
-}
-
 /// The result of parsing a command line with a set of options.
 pub type Result = result::Result<Matches, Fail>;
 
