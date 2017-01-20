@@ -11,6 +11,7 @@ homepage = "https://github.com/rust-lang/getopts"
 description = """
 getopts-like option parsing.
 """
+categories = ["command-line-interface"]
 
 [dev-dependencies]
 log = "0.3"
