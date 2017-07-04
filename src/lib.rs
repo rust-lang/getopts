@@ -869,19 +869,19 @@ impl fmt::Display for Fail {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             ArgumentMissing(ref nm) => {
-                write!(f, "Argument to option '{}' missing.", *nm)
+                write!(f, "Argument to option '{}' missing", *nm)
             }
             UnrecognizedOption(ref nm) => {
-                write!(f, "Unrecognized option: '{}'.", *nm)
+                write!(f, "Unrecognized option: '{}'", *nm)
             }
             OptionMissing(ref nm) => {
-                write!(f, "Required option '{}' missing.", *nm)
+                write!(f, "Required option '{}' missing", *nm)
             }
             OptionDuplicated(ref nm) => {
-                write!(f, "Option '{}' given more than once.", *nm)
+                write!(f, "Option '{}' given more than once", *nm)
             }
             UnexpectedArgument(ref nm) => {
-                write!(f, "Option '{}' does not take an argument.", *nm)
+                write!(f, "Option '{}' does not take an argument", *nm)
             }
         }
     }
