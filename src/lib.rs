@@ -449,18 +449,16 @@ impl Options {
     }
 
     /// Derive a short one-line usage summary from a set of long options.
-    #[allow(deprecated)] // connect => join in 1.3
     pub fn short_usage(&self, program_name: &str) -> String {
         let mut line = format!("Usage: {} ", program_name);
         line.push_str(&self.grps.iter()
                            .map(format_option)
                            .collect::<Vec<String>>()
-                           .connect(" "));
+                           .join(" "));
         line
     }
 
     /// Derive a usage message from a set of options.
-    #[allow(deprecated)] // connect => join in 1.3
     pub fn usage(&self, brief: &str) -> String {
         let desc_sep = format!("\n{}", repeat(" ").take(24).collect::<String>());
 
@@ -554,13 +552,13 @@ impl Options {
 
             // FIXME: #5516 should be graphemes not codepoints
             // wrapped description
-            row.push_str(&desc_rows.connect(&desc_sep));
+            row.push_str(&desc_rows.join(&desc_sep));
 
             row
         });
 
         format!("{}\n\nOptions:\n{}\n", brief,
-                rows.collect::<Vec<String>>().connect("\n"))
+                rows.collect::<Vec<String>>().join("\n"))
     }
 }
 
