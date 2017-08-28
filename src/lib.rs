@@ -341,6 +341,7 @@ impl Options {
             } else {
                 let mut names;
                 let mut i_arg = None;
+                let mut was_long = true;
                 if cur.as_bytes()[1] == b'-' || self.long_only {
                     let tail = if cur.as_bytes()[1] == b'-' {
                         &cur[2..curlen]
@@ -357,6 +358,7 @@ impl Options {
                         i_arg = Some(tail_eq[1].to_string());
                     }
                 } else {
+                    was_long = false;
                     names = Vec::new();
                     for (j, ch) in cur.char_indices().skip(1) {
                         let opt = Short(ch);
@@ -404,11 +406,17 @@ impl Options {
                         vals[optid].push(Given);
                       }
                       Maybe => {
+                        // Note that here we do not handle `--arg value`.
+                        // This matches GNU getopt behavior; but also
+                        // makes sense, because if this were accepted,
+                        // then users could only write a "Maybe" long
+                        // option at the end of the arguments when
+                        // FloatingFrees is in use.
                         if !i_arg.is_none() {
                             vals[optid]
                                 .push(Val((i_arg.clone())
                                 .unwrap()));
-                        } else if name_pos < names.len() || i + 1 == l ||
+                        } else if was_long || name_pos < names.len() || i + 1 == l ||
                                 is_arg(&args[i + 1]) {
                             vals[optid].push(Given);
                         } else {
@@ -1346,7 +1354,7 @@ mod tests {
     fn test_optflagopt() {
         let long_args = vec!("--test".to_string());
         let mut opts = Options::new();
-        opts.optflag("t", "test", "testing");
+        opts.optflagopt("t", "test", "testing", "ARG");
         match opts.parse(&long_args) {
           Ok(ref m) => {
             assert!(m.opt_present("test"));
@@ -1361,6 +1369,30 @@ mod tests {
             assert!(m.opt_present("t"));
           }
           _ => panic!()
+        }
+        let short_args = vec!("-t".to_string(), "x".to_string());
+        match opts.parse(&short_args) {
+            Ok(ref m) => {
+                assert_eq!(m.opt_str("t").unwrap(), "x");
+                assert_eq!(m.opt_str("test").unwrap(), "x");
+            }
+            _ => panic!()
+        }
+        let long_args = vec!("--test=x".to_string());
+        match opts.parse(&long_args) {
+            Ok(ref m) => {
+                assert_eq!(m.opt_str("t").unwrap(), "x");
+                assert_eq!(m.opt_str("test").unwrap(), "x");
+            }
+            _ => panic!()
+        }
+        let long_args = vec!("--test".to_string(), "x".to_string());
+        match opts.parse(&long_args) {
+            Ok(ref m) => {
+                assert_eq!(m.opt_str("t"), None);
+                assert_eq!(m.opt_str("test"), None);
+            }
+            _ => panic!()
         }
         let no_args: Vec<String> = vec!();
         match opts.parse(&no_args) {
