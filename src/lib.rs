@@ -1346,7 +1346,7 @@ mod tests {
     fn test_optflagopt() {
         let long_args = vec!("--test".to_string());
         let mut opts = Options::new();
-        opts.optflag("t", "test", "testing");
+        opts.optflagopt("t", "test", "testing", "ARG");
         match opts.parse(&long_args) {
           Ok(ref m) => {
             assert!(m.opt_present("test"));
