@@ -307,36 +307,27 @@ impl Options {
         where C::Item: AsRef<OsStr>
     {
         let opts: Vec<Opt> = self.grps.iter().map(|x| x.long_to_short()).collect();
-        let n_opts = opts.len();
 
-        fn f(_x: usize) -> Vec<Optval> { return Vec::new(); }
-
-        let mut vals = (0 .. n_opts).map(f).collect::<Vec<_>>();
+        let mut vals = (0 .. opts.len()).map(|_| Vec::new()).collect::<Vec<Vec<Optval>>>();
         let mut free: Vec<String> = Vec::new();
-        let args = try!(args.into_iter().map(|i| {
+        let args = args.into_iter().map(|i| {
             i.as_ref().to_str().ok_or_else(|| {
                 Fail::UnrecognizedOption(format!("{:?}", i.as_ref()))
             }).map(|s| s.to_owned())
-        }).collect::<::std::result::Result<Vec<_>, _>>());
-        let l = args.len();
-        let mut i = 0;
-        while i < l {
-            let cur = args[i].clone();
-            let curlen = cur.len();
+        }).collect::<::std::result::Result<Vec<_>,_>>()?;
+        let mut args = args.into_iter().peekable();
+        while let Some(cur) = args.next() {
             if !is_arg(&cur) {
                 match self.parsing_style {
                     ParsingStyle::FloatingFrees => free.push(cur),
                     ParsingStyle::StopAtFirstFree => {
-                        while i < l {
-                            free.push(args[i].clone());
-                            i += 1;
-                        }
+                        free.push(cur);
+                        free.extend(args);
                         break;
                     }
                 }
             } else if cur == "--" {
-                let mut j = i + 1;
-                while j < l { free.push(args[j].clone()); j += 1; }
+                free.extend(args);
                 break;
             } else {
                 let mut names;
@@ -344,10 +335,10 @@ impl Options {
                 let mut was_long = true;
                 if cur.as_bytes()[1] == b'-' || self.long_only {
                     let tail = if cur.as_bytes()[1] == b'-' {
-                        &cur[2..curlen]
+                        &cur[2..]
                     } else {
                         assert!(self.long_only);
-                        &cur[1..curlen]
+                        &cur[1..]
                     };
                     let tail_eq: Vec<&str> = tail.splitn(2, '=').collect();
                     if tail_eq.len() <= 1 {
@@ -384,8 +375,8 @@ impl Options {
 
                         if arg_follows {
                             let next = j + ch.len_utf8();
-                            if next < curlen {
-                                i_arg = Some(cur[next..curlen].to_string());
+                            if next < cur.len() {
+                                i_arg = Some(cur[next..].to_string());
                                 break;
                             }
                         }
@@ -412,41 +403,34 @@ impl Options {
                         // then users could only write a "Maybe" long
                         // option at the end of the arguments when
                         // FloatingFrees is in use.
-                        if !i_arg.is_none() {
-                            vals[optid]
-                                .push(Val((i_arg.clone())
-                                .unwrap()));
-                        } else if was_long || name_pos < names.len() || i + 1 == l ||
-                                is_arg(&args[i + 1]) {
+                        if let Some(i_arg) = i_arg.take() {
+                            vals[optid].push(Val(i_arg));
+                        } else if was_long || name_pos < names.len() || args.peek().map_or(true, |n| is_arg(&n)) {
                             vals[optid].push(Given);
                         } else {
-                            i += 1;
-                            vals[optid].push(Val(args[i].clone()));
+                            vals[optid].push(Val(args.next().unwrap()));
                         }
                       }
                       Yes => {
-                        if !i_arg.is_none() {
-                            vals[optid].push(Val(i_arg.clone().unwrap()));
-                        } else if i + 1 == l {
-                            return Err(ArgumentMissing(nm.to_string()));
+                        if let Some(i_arg) = i_arg.take() {
+                            vals[optid].push(Val(i_arg));
+                        } else if let Some(n) = args.next() {
+                            vals[optid].push(Val(n));
                         } else {
-                            i += 1;
-                            vals[optid].push(Val(args[i].clone()));
+                            return Err(ArgumentMissing(nm.to_string()));
                         }
                       }
                     }
                 }
             }
-            i += 1;
         }
-        for i in 0 .. n_opts {
-            let n = vals[i].len();
-            let occ = opts[i].occur;
-            if occ == Req && n == 0 {
-                return Err(OptionMissing(opts[i].name.to_string()));
+        debug_assert_eq!(vals.len(), opts.len());
+        for (vals, opt) in vals.iter().zip(opts.iter()) {
+            if opt.occur == Req && vals.is_empty() {
+                return Err(OptionMissing(opt.name.to_string()));
             }
-            if occ != Multi && n > 1 {
-                return Err(OptionDuplicated(opts[i].name.to_string()));
+            if opt.occur != Multi && vals.len() > 1 {
+                return Err(OptionDuplicated(opt.name.to_string()));
             }
         }
         Ok(Matches {
