@@ -309,9 +309,7 @@ impl Options {
         let opts: Vec<Opt> = self.grps.iter().map(|x| x.long_to_short()).collect();
         let n_opts = opts.len();
 
-        fn f(_x: usize) -> Vec<Optval> { return Vec::new(); }
-
-        let mut vals = (0 .. n_opts).map(f).collect::<Vec<_>>();
+        let mut vals = (0 .. n_opts).map(|_| Vec::new()).collect::<Vec<Vec<Optval>>>();
         let mut free: Vec<String> = Vec::new();
         let mut free_os: Vec<OsString> = Vec::new();
         let args_os: Vec<OsString> = args.into_iter()
@@ -326,7 +324,6 @@ impl Options {
         let mut i = 0;
         while i < l {
             let cur = args[i];
-            let curlen = cur.len();
             if !is_arg(cur) {
                 match self.parsing_style {
                     ParsingStyle::FloatingFrees => {
@@ -356,10 +353,10 @@ impl Options {
                 let mut was_long = true;
                 if cur.as_bytes()[1] == b'-' || self.long_only {
                     let tail = if cur.as_bytes()[1] == b'-' {
-                        &cur[2..curlen]
+                        &cur[2..]
                     } else {
                         assert!(self.long_only);
-                        &cur[1..curlen]
+                        &cur[1..]
                     };
                     let tail_eq: Vec<&str> = tail.splitn(2, '=').collect();
                     if tail_eq.len() <= 1 {
@@ -396,8 +393,8 @@ impl Options {
 
                         if arg_follows {
                             let next = j + ch.len_utf8();
-                            if next < curlen {
-                                i_arg = Some(cur[next..curlen].to_string());
+                            if next < cur.len() {
+                                i_arg = Some(cur[next..].to_string());
                                 break;
                             }
                         }
