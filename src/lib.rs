@@ -315,15 +315,13 @@ impl Options {
         let args_os: Vec<OsString> = args.into_iter()
             .map(|i| i.as_ref().to_owned())
             .collect();
-        let args = try!(args_os.iter().map(|arg| {
-            arg.to_str().ok_or_else(|| {
-                Fail::UnrecognizedOption(format!("{:?}", arg))
-            })
-        }).collect::<::std::result::Result<Vec<_>, _>>());
+        let args: Vec<_> = args_os.iter().map(|arg| {
+            arg.to_string_lossy()
+        }).collect();
         let l = args.len();
         let mut i = 0;
         while i < l {
-            let cur = args[i];
+            let cur = &args[i];
             if !is_arg(cur) {
                 match self.parsing_style {
                     ParsingStyle::FloatingFrees => {
@@ -1109,6 +1107,27 @@ mod tests {
                       .parse(&args) {
           Err(OptionMissing(_)) => {},
           _ => panic!()
+        }
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_binary() {
+        use std::ffi::OsStr;
+        use std::os::unix::ffi::OsStrExt;
+        let non_utf8: &OsStr = OsStrExt::from_bytes(&[0xc3,0x28,0x1,0xff,0xa0,0xa1,0xf0,0x28,0x8c,0xbc]);
+        let args = vec![OsString::from("-t"), OsString::from("ok"), non_utf8.to_os_string()];
+        match Options::new()
+                      .reqopt("t", "test", "testing", "TEST")
+                      .parse(&args) {
+            Ok(ref m) => {
+                assert!((m.opt_present("test")));
+                assert_eq!(m.opt_str("test").unwrap(), "ok");
+                assert!((m.opt_present("t")));
+                assert_eq!(m.opt_str("t").unwrap(), "ok");
+                assert_eq!(m.free_os[0], non_utf8);
+            }
+            Err(e) => panic!("{}",e),
         }
     }
 
