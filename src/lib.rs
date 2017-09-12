@@ -115,7 +115,7 @@ use self::Whitespace::*;
 use self::LengthLimit::*;
 
 use std::error::Error;
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::iter::{repeat, IntoIterator};
 use std::result;
@@ -309,26 +309,29 @@ impl Options {
         let opts: Vec<Opt> = self.grps.iter().map(|x| x.long_to_short()).collect();
         let n_opts = opts.len();
 
-        fn f(_x: usize) -> Vec<Optval> { return Vec::new(); }
-
-        let mut vals = (0 .. n_opts).map(f).collect::<Vec<_>>();
+        let mut vals = (0 .. n_opts).map(|_| Vec::new()).collect::<Vec<Vec<Optval>>>();
         let mut free: Vec<String> = Vec::new();
-        let args = try!(args.into_iter().map(|i| {
-            i.as_ref().to_str().ok_or_else(|| {
-                Fail::UnrecognizedOption(format!("{:?}", i.as_ref()))
-            }).map(|s| s.to_owned())
-        }).collect::<::std::result::Result<Vec<_>, _>>());
+        let mut free_os: Vec<OsString> = Vec::new();
+        let args_os: Vec<OsString> = args.into_iter()
+            .map(|i| i.as_ref().to_owned())
+            .collect();
+        let args: Vec<_> = args_os.iter().map(|arg| {
+            arg.to_string_lossy()
+        }).collect();
         let l = args.len();
         let mut i = 0;
         while i < l {
-            let cur = args[i].clone();
-            let curlen = cur.len();
-            if !is_arg(&cur) {
+            let cur = &args[i];
+            if !is_arg(cur) {
                 match self.parsing_style {
-                    ParsingStyle::FloatingFrees => free.push(cur),
+                    ParsingStyle::FloatingFrees => {
+                        free.push(cur.to_string());
+                        free_os.push(args_os[i].clone());
+                    }
                     ParsingStyle::StopAtFirstFree => {
                         while i < l {
-                            free.push(args[i].clone());
+                            free.push(args[i].to_string());
+                            free_os.push(args_os[i].clone());
                             i += 1;
                         }
                         break;
@@ -336,7 +339,11 @@ impl Options {
                 }
             } else if cur == "--" {
                 let mut j = i + 1;
-                while j < l { free.push(args[j].clone()); j += 1; }
+                while j < l {
+                    free.push(args[j].to_string());
+                    free_os.push(args_os[j].clone());
+                    j += 1;
+                }
                 break;
             } else {
                 let mut names;
@@ -344,10 +351,10 @@ impl Options {
                 let mut was_long = true;
                 if cur.as_bytes()[1] == b'-' || self.long_only {
                     let tail = if cur.as_bytes()[1] == b'-' {
-                        &cur[2..curlen]
+                        &cur[2..]
                     } else {
                         assert!(self.long_only);
-                        &cur[1..curlen]
+                        &cur[1..]
                     };
                     let tail_eq: Vec<&str> = tail.splitn(2, '=').collect();
                     if tail_eq.len() <= 1 {
@@ -384,8 +391,8 @@ impl Options {
 
                         if arg_follows {
                             let next = j + ch.len_utf8();
-                            if next < curlen {
-                                i_arg = Some(cur[next..curlen].to_string());
+                            if next < cur.len() {
+                                i_arg = Some(cur[next..].to_string());
                                 break;
                             }
                         }
@@ -421,7 +428,7 @@ impl Options {
                             vals[optid].push(Given);
                         } else {
                             i += 1;
-                            vals[optid].push(Val(args[i].clone()));
+                            vals[optid].push(Val(args[i].to_string()));
                         }
                       }
                       Yes => {
@@ -431,7 +438,7 @@ impl Options {
                             return Err(ArgumentMissing(nm.to_string()));
                         } else {
                             i += 1;
-                            vals[optid].push(Val(args[i].clone()));
+                            vals[optid].push(Val(args[i].to_string()));
                         }
                       }
                     }
@@ -452,7 +459,8 @@ impl Options {
         Ok(Matches {
             opts: opts,
             vals: vals,
-            free: free
+            free: free,
+            free_os: free_os,
         })
     }
 
@@ -670,8 +678,10 @@ pub struct Matches {
     opts: Vec<Opt>,
     /// Values of the Options that matched
     vals: Vec<Vec<Optval>>,
-    /// Free string fragments
+    /// Free string fragments as String (for UTF-8-encoded arguments only)
     pub free: Vec<String>,
+    /// Free string fragments as OsString
+    pub free_os: Vec<OsString>,
 }
 
 /// The type returned when the command line does not conform to the
@@ -1059,6 +1069,7 @@ fn test_split_within() {
 #[cfg(test)]
 mod tests {
     use super::{HasArg, Name, Occur, Opt, Options, ParsingStyle};
+    use std::ffi::OsString;
     use super::Fail::*;
 
     // Tests for reqopt
@@ -1096,6 +1107,28 @@ mod tests {
                       .parse(&args) {
           Err(OptionMissing(_)) => {},
           _ => panic!()
+        }
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_binary() {
+        use std::ffi::OsStr;
+        use std::os::unix::ffi::OsStrExt;
+        let non_utf8 = [0xc3,0x28,0x1,0xff,0xa0,0xa1,0xf0,0x28,0x8c,0xbc];
+        let non_utf8: &OsStr = OsStrExt::from_bytes(&non_utf8);
+        let args = vec![OsString::from("-t"), OsString::from("ok"), non_utf8.to_os_string()];
+        match Options::new()
+                      .reqopt("t", "test", "testing", "TEST")
+                      .parse(&args) {
+            Ok(ref m) => {
+                assert!((m.opt_present("test")));
+                assert_eq!(m.opt_str("test").unwrap(), "ok");
+                assert!((m.opt_present("t")));
+                assert_eq!(m.opt_str("t").unwrap(), "ok");
+                assert_eq!(m.free_os[0], non_utf8);
+            }
+            Err(e) => panic!("{}",e),
         }
     }
 
@@ -1255,7 +1288,7 @@ mod tests {
 
     #[test]
     fn test_optflag_short_arg() {
-        let args = vec!("-t".to_string(), "20".to_string());
+        let args = vec![OsString::from("-t"), OsString::from("20")];
         match Options::new()
                       .optflag("t", "test", "testing")
                       .parse(&args) {
@@ -1263,6 +1296,7 @@ mod tests {
             // The next variable after the flag is just a free argument
 
             assert!(m.free[0] == "20");
+            assert!(m.free_os[0] == OsString::from("20"));
           }
           _ => panic!()
         }
