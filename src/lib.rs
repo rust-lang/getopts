@@ -1115,7 +1115,8 @@ mod tests {
     fn test_binary() {
         use std::ffi::OsStr;
         use std::os::unix::ffi::OsStrExt;
-        let non_utf8: &OsStr = OsStrExt::from_bytes(&[0xc3,0x28,0x1,0xff,0xa0,0xa1,0xf0,0x28,0x8c,0xbc]);
+        let non_utf8 = [0xc3,0x28,0x1,0xff,0xa0,0xa1,0xf0,0x28,0x8c,0xbc];
+        let non_utf8: &OsStr = OsStrExt::from_bytes(&non_utf8);
         let args = vec![OsString::from("-t"), OsString::from("ok"), non_utf8.to_os_string()];
         match Options::new()
                       .reqopt("t", "test", "testing", "TEST")
