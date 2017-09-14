@@ -1232,6 +1232,37 @@ mod tests {
     }
 
     #[test]
+    fn test_opt_end() {
+        let args = vec!["--".to_owned(), "-t".to_owned()];
+        match Options::new()
+                      .optflag("t", "test", "testing")
+                      .parse(&args) {
+          Ok(ref m) => {
+            assert!(!m.opt_present("test"));
+            assert!(!m.opt_present("t"));
+            assert_eq!(m.free.len(), 1);
+            assert_eq!(m.free[0], "-t");
+          }
+          _ => panic!()
+        }
+    }
+
+    #[test]
+    fn test_opt_only_end() {
+        let args = vec!["--".to_owned()];
+        match Options::new()
+                      .optflag("t", "test", "testing")
+                      .parse(&args) {
+          Ok(ref m) => {
+            assert!(!m.opt_present("test"));
+            assert!(!m.opt_present("t"));
+            assert_eq!(m.free.len(), 0);
+          }
+          _ => panic!()
+        }
+    }
+
+    #[test]
     fn test_optflag_long_arg() {
         let args = vec!("--test=20".to_string());
         match Options::new()
