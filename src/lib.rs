@@ -358,7 +358,7 @@ impl Options {
                            interpreted correctly
                         */
 
-                        let opt_id = match find_opt(&opts, opt.clone()) {
+                        let opt_id = match find_opt(&opts, &opt) {
                           Some(id) => id,
                           None => return Err(UnrecognizedOption(opt.to_string()))
                         };
@@ -382,7 +382,7 @@ impl Options {
                 let mut name_pos = 0;
                 for nm in names.iter() {
                     name_pos += 1;
-                    let optid = match find_opt(&opts, (*nm).clone()) {
+                    let optid = match find_opt(&opts, &nm) {
                       Some(id) => id,
                       None => return Err(UnrecognizedOption(nm.to_string()))
                     };
@@ -750,7 +750,7 @@ impl OptGroup {
 
 impl Matches {
     fn opt_vals(&self, nm: &str) -> Vec<Optval> {
-        match find_opt(&self.opts, Name::from_str(nm)) {
+        match find_opt(&self.opts, &Name::from_str(nm)) {
             Some(id) => self.vals[id].clone(),
             None => panic!("No option '{}' defined", nm)
         }
@@ -761,7 +761,7 @@ impl Matches {
     }
     /// Returns true if an option was defined
     pub fn opt_defined(&self, nm: &str) -> bool {
-        find_opt(&self.opts, Name::from_str(nm)).is_some()
+        find_opt(&self.opts, &Name::from_str(nm)).is_some()
     }
 
     /// Returns true if an option was matched.
@@ -777,7 +777,7 @@ impl Matches {
     /// Returns true if any of several options were matched.
     pub fn opts_present(&self, names: &[String]) -> bool {
         names.iter().any(|nm| {
-            match find_opt(&self.opts, Name::from_str(&nm)) {
+            match find_opt(&self.opts, &Name::from_str(&nm)) {
                 Some(id) if !self.vals[id].is_empty() => true,
                 _ => false,
             }
@@ -835,16 +835,16 @@ fn is_arg(arg: &str) -> bool {
     arg.as_bytes().get(0) == Some(&b'-') && arg.len() > 1
 }
 
-fn find_opt(opts: &[Opt], nm: Name) -> Option<usize> {
+fn find_opt(opts: &[Opt], nm: &Name) -> Option<usize> {
     // Search main options.
-    let pos = opts.iter().position(|opt| opt.name == nm);
+    let pos = opts.iter().position(|opt| &opt.name == nm);
     if pos.is_some() {
         return pos
     }
 
     // Search in aliases.
     for candidate in opts.iter() {
-        if candidate.aliases.iter().position(|opt| opt.name == nm).is_some() {
+        if candidate.aliases.iter().position(|opt| &opt.name == nm).is_some() {
             return opts.iter().position(|opt| opt.name == candidate.name);
         }
     }
