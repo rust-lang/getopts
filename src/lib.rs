@@ -318,10 +318,10 @@ impl Options {
         let mut args = args.into_iter().peekable();
         while let Some(cur) = args.next() {
             if !is_arg(&cur) {
+                free.push(cur);
                 match self.parsing_style {
-                    ParsingStyle::FloatingFrees => free.push(cur),
+                    ParsingStyle::FloatingFrees => {},
                     ParsingStyle::StopAtFirstFree => {
-                        free.push(cur);
                         free.extend(args);
                         break;
                     }
@@ -340,13 +340,10 @@ impl Options {
                         assert!(self.long_only);
                         &cur[1..]
                     };
-                    let tail_eq: Vec<&str> = tail.splitn(2, '=').collect();
-                    if tail_eq.len() <= 1 {
-                        names = vec!(Name::from_str(tail));
-                    } else {
-                        names =
-                            vec!(Name::from_str(tail_eq[0]));
-                        i_arg = Some(tail_eq[1].to_string());
+                    let mut parts = tail.splitn(2, '=');
+                    names = vec![Name::from_str(parts.next().unwrap())];
+                    if let Some(rest) = parts.next() {
+                        i_arg = Some(rest.to_string());
                     }
                 } else {
                     was_long = false;
