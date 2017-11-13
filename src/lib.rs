@@ -447,15 +447,22 @@ impl Options {
         line
     }
 
-    /// Derive a usage message from a set of options.
+    /// Derive a formatted message from a set of options.
     pub fn usage(&self, brief: &str) -> String {
+        let rows = self.usage_items();
+        format!("{}\n\nOptions:\n{}\n", brief,
+                rows.collect::<Vec<String>>().join("\n"))
+    }
+
+    /// Derive usage items from a set of options.
+    pub fn usage_items<'a>(&'a self) -> Box<Iterator<Item=String> + 'a> {
         let desc_sep = format!("\n{}", repeat(" ").take(24).collect::<String>());
 
         let any_short = self.grps.iter().any(|optref| {
             optref.short_name.len() > 0
         });
 
-        let rows = self.grps.iter().map(|optref| {
+        let rows = self.grps.iter().map(move |optref| {
             let OptGroup{short_name,
                          long_name,
                          hint,
@@ -546,8 +553,7 @@ impl Options {
             row
         });
 
-        format!("{}\n\nOptions:\n{}\n", brief,
-                rows.collect::<Vec<String>>().join("\n"))
+       Box::new(rows)
     }
 }
 
