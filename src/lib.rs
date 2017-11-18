@@ -461,7 +461,7 @@ impl Options {
     }
 
     /// Derive usage items from a set of options.
-    pub fn usage_items<'a>(&'a self) -> Box<Iterator<Item=String> + 'a> {
+    fn usage_items<'a>(&'a self) -> Box<Iterator<Item=String> + 'a> {
         let desc_sep = format!("\n{}", repeat(" ").take(24).collect::<String>());
 
         let any_short = self.grps.iter().any(|optref| {
