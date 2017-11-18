@@ -447,11 +447,17 @@ impl Options {
         line
     }
 
+
     /// Derive a formatted message from a set of options.
     pub fn usage(&self, brief: &str) -> String {
-        let rows = self.usage_items();
-        format!("{}\n\nOptions:\n{}\n", brief,
-                rows.collect::<Vec<String>>().join("\n"))
+        self.usage_with_format(|opts|
+            format!("{}\n\nOptions:\n{}\n", brief, opts.collect::<Vec<String>>().join("\n")))
+    }
+
+    /// Derive a custom formatted message from a set of options. The formatted options provided to
+    /// a closure as an iterator.
+    pub fn usage_with_format<'a, F: FnMut(Box<Iterator<Item=String> + 'a>) -> String>(&'a self, mut formatter: F) -> String {
+        formatter(self.usage_items())
     }
 
     /// Derive usage items from a set of options.
