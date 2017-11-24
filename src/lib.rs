@@ -457,8 +457,7 @@ impl Options {
     /// Derive a custom formatted message from a set of options. The formatted options provided to
     /// a closure as an iterator.
     pub fn usage_with_format<F: FnMut(&mut Iterator<Item=String>) -> String>(&self, mut formatter: F) -> String {
-        let mut items = self.usage_items();
-        formatter(items.as_mut())
+        formatter(&mut self.usage_items())
     }
 
     /// Derive usage items from a set of options.
