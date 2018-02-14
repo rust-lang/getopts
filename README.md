@@ -21,3 +21,7 @@ and this to your crate root:
 ```rust
 extern crate getopts;
 ```
+
+## Rust Version Support
+
+The minimum supported Rust version is 1.18.
