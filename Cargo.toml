@@ -14,4 +14,4 @@ getopts-like option parsing.
 categories = ["command-line-interface"]
 
 [dev-dependencies]
-log = "0.3"
+log = "0.4"
