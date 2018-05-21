@@ -2006,4 +2006,17 @@ Options:
         let mut opts = Options::new();
         opts.optflag("", "a", "Oops, long option too short");
     }
+
+    #[test]
+    #[should_panic]
+    fn test_undefined_opt_present() {
+        let mut opts = Options::new();
+        opts.optflag("h", "help", "Description");
+        let args = vec!["-h"];
+        let matches = &match opts.parse(args) {
+            Ok(m) => m,
+            Err(e) => panic!("{}", e)
+        };
+        assert!(!matches.opt_present("undefined"));
+    }
 }
