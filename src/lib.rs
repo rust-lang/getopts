@@ -423,11 +423,17 @@ impl Options {
         }
         debug_assert_eq!(vals.len(), opts.len());
         for (vals, opt) in vals.iter().zip(opts.iter()) {
-            if opt.occur == Req && vals.is_empty() {
-                return Err(OptionMissing(opt.name.to_string()));
-            }
+            // check for duplicate options.
             if opt.occur != Multi && vals.len() > 1 {
                 return Err(OptionDuplicated(opt.name.to_string()));
+            }
+            // gracefully handle help, version flags, missing required options.
+            if self.has_sufficient_opt(&opts) {
+                continue;
+            }
+            // check for required options that are missing.
+            if opt.occur == Req && vals.is_empty() {
+                return Err(OptionMissing(opt.name.to_string()));
             }
         }
         Ok(Matches {
@@ -560,6 +566,21 @@ impl Options {
         });
 
        Box::new(rows)
+    }
+
+    // auto handle sufficient options like --help and --version, using which
+    // parse() can gracefully handle missing `required-options`.
+    fn has_sufficient_opt(&self, opts: &Vec<Opt>) -> bool {
+        opts.iter().any(|opt|
+            match opt.name {
+                Long(ref s) =>
+                    match s.as_ref() {
+                        "help" | "version" => true,
+                        _ => false
+                    },
+                _ => false
+            }
+        )
     }
 }
 
@@ -2005,5 +2026,29 @@ Options:
     fn test_long_name_too_short() {
         let mut opts = Options::new();
         opts.optflag("", "a", "Oops, long option too short");
+    }
+
+    #[test]
+    fn test_sufficient_opt() {
+        let sufficient_opts = vec![
+            vec!["h", "help", "--help"],
+            vec!["v", "version", "--version"],
+        ];
+        for suff_opt in sufficient_opts.iter() {
+            let (s, l) = (suff_opt[0], suff_opt[1]);
+
+            let mut opts = Options::new();
+            opts.reqopt("t", "test", "testing", "TEST");
+            opts.optflag(s, l, "Description");
+            let args = vec!(suff_opt[2]);
+            let matches = &match opts.parse(args) {
+                Ok(m) => m,
+                Err(e) => panic!("{}", e)
+            };
+            assert!(matches.opt_present(s));
+            assert!(matches.opt_present(l));
+            assert!(!matches.opt_present("t"));
+            assert!(!matches.opt_present("test"));
+        }
     }
 }
