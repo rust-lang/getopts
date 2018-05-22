@@ -119,6 +119,7 @@ use std::ffi::OsStr;
 use std::fmt;
 use std::iter::{repeat, IntoIterator};
 use std::result;
+use std::str::FromStr;
 
 /// A description of the options that a program can handle.
 pub struct Options {
@@ -841,6 +842,20 @@ impl Matches {
         }
     }
 
+    /// Returns the matching value or `None`.
+    ///
+    /// Similar to opt_default, except the two differences. Instead of
+    /// returning None when option was not present, return `def`. Instead of
+    /// returning &str slice return valued of type T parsed using str::parse().
+    pub fn opt_get<T>(&self, nm: &str, def: T)
+        -> result::Result<T, <T as FromStr>::Err> where T: FromStr
+    {
+        match self.opt_val(nm) {
+            Some(Val(s)) => s.parse(),
+            Some(Given) => Ok(def),
+            None => Ok(def),
+        }
+    }
 }
 
 fn is_arg(arg: &str) -> bool {
@@ -2017,5 +2032,47 @@ Options:
             Ok(matches) => assert!(!matches.opt_present("undefined")),
             Err(e) => panic!("{}", e)
         }
+    }
+
+    #[test]
+    fn test_opt_default() {
+        let mut opts = Options::new();
+        opts.optflag("h", "help", "Description");
+        opts.optflag("i", "ignore", "Description");
+        opts.optflag("r", "run", "Description");
+        opts.long_only(false);
+
+        let args: Vec<String> = ["-i", "-r", "10"]
+            .iter().map(|x| x.to_string()).collect();
+        let matches = &match opts.parse(&args) {
+            Ok(m) => m,
+            Err(e) => panic!("{}", e)
+        };
+        assert_eq!(matches.opt_default("help", ""), None);
+        assert_eq!(matches.opt_default("i", "def"), Some("def".to_string()));
+    }
+
+    #[test]
+    fn test_opt_get() {
+        let mut opts = Options::new();
+        opts.optflag("h", "help", "Description");
+        opts.optflagopt("i", "ignore", "Description", "true | false");
+        opts.optflagopt("r", "run", "Description", "0 .. 10");
+        opts.optflagopt("p", "percent", "Description", "0.0 .. 10.0");
+        opts.long_only(false);
+
+        let args: Vec<String> = [
+            "-i", "true", "-p", "1.1"
+        ].iter().map(|x| x.to_string()).collect();
+        let matches = &match opts.parse(&args) {
+            Ok(m) => m,
+            Err(e) => panic!("{}", e)
+        };
+        let h_arg =matches.opt_get("help", 10);
+        assert_eq!(h_arg, Ok(10));
+        let i_arg = matches.opt_get("i", false);
+        assert_eq!(i_arg, Ok(true));
+        let p_arg = matches.opt_get("p", 10.2);
+        assert_eq!(p_arg, Ok(1.1));
     }
 }
