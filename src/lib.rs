@@ -524,7 +524,9 @@ impl Options {
 
             let rowlen = row.width();
             if rowlen < 24 {
-                (0 .. 24 - rowlen).for_each(|_| row.push(' '));
+                for _ in 0 .. 24 - rowlen {
+                    row.push(' ');
+                }
             } else {
                 row.push_str(&desc_sep)
             }
