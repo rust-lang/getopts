@@ -2013,10 +2013,9 @@ Options:
         let mut opts = Options::new();
         opts.optflag("h", "help", "Description");
         let args = vec!["-h"];
-        let matches = &match opts.parse(args) {
-            Ok(m) => m,
+        match opts.parse(args) {
+            Ok(matches) => assert!(!matches.opt_present("undefined")),
             Err(e) => panic!("{}", e)
-        };
-        assert!(!matches.opt_present("undefined"));
+        }
     }
 }
