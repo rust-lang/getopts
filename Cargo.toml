@@ -13,6 +13,8 @@ getopts-like option parsing.
 """
 categories = ["command-line-interface"]
 
+[dependencies]
+unicode-width = "0.1.5"
+
 [dev-dependencies]
 log = "0.4"
-unicode-width = "0.1.5"
