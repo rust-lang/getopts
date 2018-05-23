@@ -92,6 +92,7 @@
 //! }
 //! ```
 
+#![feature(rustc_private)]
 #![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
        html_favicon_url = "https://www.rust-lang.org/favicon.ico",
        html_root_url = "https://doc.rust-lang.org/getopts/")]
@@ -105,20 +106,21 @@
 
 #[cfg(test)] #[macro_use] extern crate log;
 
+
 use self::Name::*;
 use self::HasArg::*;
 use self::Occur::*;
 use self::Fail::*;
 use self::Optval::*;
-use self::SplitWithinState::*;
-use self::Whitespace::*;
-use self::LengthLimit::*;
 
 use std::error::Error;
 use std::ffi::OsStr;
 use std::fmt;
 use std::iter::{repeat, IntoIterator};
 use std::result;
+
+extern crate unicode_width;
+use unicode_width::UnicodeWidthStr;
 
 /// A description of the options that a program can handle.
 pub struct Options {
@@ -479,7 +481,7 @@ impl Options {
             let mut row = "    ".to_string();
 
             // short option
-            match short_name.len() {
+            match short_name.width() {
                 0 => {
                     if any_short {
                         row.push_str("    ");
@@ -488,7 +490,7 @@ impl Options {
                 1 => {
                     row.push('-');
                     row.push_str(&short_name);
-                    if long_name.len() > 0 {
+                    if long_name.width() > 0 {
                         row.push_str(", ");
                     } else {
                         // Only a single space here, so that any
@@ -496,18 +498,15 @@ impl Options {
                         row.push(' ');
                     }
                 }
+                // FIXME: refer issue #7.
                 _ => panic!("the short name should only be 1 ascii char long"),
             }
 
             // long option
-            match long_name.len() {
+            match long_name.width() {
                 0 => {}
                 _ => {
-                    if self.long_only {
-                        row.push('-');
-                    } else {
-                        row.push_str("--");
-                    }
+                    row.push_str(if self.long_only { "-" } else { "--" });
                     row.push_str(&long_name);
                     row.push(' ');
                 }
@@ -524,36 +523,14 @@ impl Options {
                 }
             }
 
-            // FIXME: #5516 should be graphemes not codepoints
-            // here we just need to indent the start of the description
-            let rowlen = row.chars().count();
+            let rowlen = row.width();
             if rowlen < 24 {
-                for _ in 0 .. 24 - rowlen {
-                    row.push(' ');
-                }
+                (0 .. 24 - rowlen).for_each(|_| row.push(' '));
             } else {
                 row.push_str(&desc_sep)
             }
 
-            // Normalize desc to contain words separated by one space character
-            let mut desc_normalized_whitespace = String::new();
-            for word in desc.split(|c: char| c.is_whitespace())
-                            .filter(|s| !s.is_empty()) {
-                desc_normalized_whitespace.push_str(word);
-                desc_normalized_whitespace.push(' ');
-            }
-
-            // FIXME: #5516 should be graphemes not codepoints
-            let mut desc_rows = Vec::new();
-            each_split_within(&desc_normalized_whitespace,
-                              54,
-                              |substr| {
-                desc_rows.push(substr.to_string());
-                true
-            });
-
-            // FIXME: #5516 should be graphemes not codepoints
-            // wrapped description
+            let desc_rows = each_split_within(&desc, 54);
             row.push_str(&desc_rows.join(&desc_sep));
 
             row
@@ -923,118 +900,52 @@ fn format_option(opt: &OptGroup) -> String {
     line
 }
 
-#[derive(Clone, Copy)]
-enum SplitWithinState {
-    A,  // leading whitespace, initial state
-    B,  // words
-    C,  // internal and trailing whitespace
-}
-
-#[derive(Clone, Copy)]
-enum Whitespace {
-    Ws, // current char is whitespace
-    Cr  // current char is not whitespace
-}
-
-#[derive(Clone, Copy)]
-enum LengthLimit {
-    UnderLim, // current char makes current substring still fit in limit
-    OverLim   // current char makes current substring no longer fit in limit
-}
-
-
 /// Splits a string into substrings with possibly internal whitespace,
 /// each of them at most `lim` bytes long, if possible. The substrings
 /// have leading and trailing whitespace removed, and are only cut at
 /// whitespace boundaries.
 ///
-/// Note: Function was moved here from `std::str` because this module is the only place that
-/// uses it, and because it was too specific for a general string function.
-fn each_split_within<'a, F>(ss: &'a str, lim: usize, mut it: F)
-                            -> bool where F: FnMut(&'a str) -> bool {
-    // Just for fun, let's write this as a state machine:
+/// Note: Function was moved here from `std::str` because this module
+/// is the only place that uses it, and because it was too specific for
+/// a general string function.
+fn each_split_within(desc: &String, lim: usize) -> Vec<String> {
+    let mut rows = Vec::new();
+    for line in desc.trim().lines() {
+        let mut words = Vec::new();
+        let mut word = String::new();
+        for ch in line.chars() {
+            if !ch.is_whitespace() {
+                word.push(ch);
+                continue
+            }
+            words.push(word);
+            word = String::new();
+        }
+        words.push(word);
 
-    let mut slice_start = 0;
-    let mut last_start = 0;
-    let mut last_end = 0;
-    let mut state = A;
-    let mut fake_i = ss.len();
-    let mut lim = lim;
-
-    let mut cont = true;
-
-    // if the limit is larger than the string, lower it to save cycles
-    if lim >= fake_i {
-        lim = fake_i;
+        let mut row = String::new();
+        for word in words.iter().filter(|word| word.len() > 0) {
+            let mut width = row.width() + word.width();
+            if row.len() > 0 { width += " ".width(); }
+            if width <= lim {
+                if row.len() > 0 { row.push_str(" ") }
+                row.push_str(word);
+                continue
+            }
+            rows.push(row.trim().to_string());
+            row = String::new();
+            row.push_str(word);
+        }
+        rows.push(row.trim().to_string());
     }
-
-    let mut machine = |cont: &mut bool, state: &mut SplitWithinState, (i, c): (usize, char)| {
-        let whitespace = if c.is_whitespace() { Ws }       else { Cr };
-        let limit      = if (i - slice_start + 1) <= lim  { UnderLim } else { OverLim };
-
-        *state = match (*state, whitespace, limit) {
-            (A, Ws, _)        => { A }
-            (A, Cr, _)        => { slice_start = i; last_start = i; B }
-
-            (B, Cr, UnderLim) => { B }
-            (B, Cr, OverLim)  if (i - last_start + 1) > lim => {
-                // A single word has gone over the limit.  In this
-                // case we just accept that the word will be too long.
-                B
-            }
-            (B, Cr, OverLim)  => {
-                *cont = it(&ss[slice_start..last_end]);
-                slice_start = last_start;
-                B
-            }
-            (B, Ws, UnderLim) => {
-                last_end = i;
-                C
-            }
-            (B, Ws, OverLim)  => {
-                last_end = i;
-                *cont = it(&ss[slice_start..last_end]);
-                A
-            }
-
-            (C, Cr, UnderLim) => {
-                last_start = i;
-                B
-            }
-            (C, Cr, OverLim)  => {
-                *cont = it(&ss[slice_start..last_end]);
-                slice_start = i;
-                last_start = i;
-                last_end = i;
-                B
-            }
-            (C, Ws, OverLim)  => {
-                *cont = it(&ss[slice_start..last_end]);
-                A
-            }
-            (C, Ws, UnderLim) => {
-                C
-            }
-        };
-
-        *cont
-    };
-
-    ss.char_indices().all(|x| machine(&mut cont, &mut state, x));
-
-    // Let the automaton 'run out' by supplying trailing whitespace
-    while cont && match state { B | C => true, A => false } {
-        machine(&mut cont, &mut state, (fake_i, ' '));
-        fake_i += 1;
-    }
-    return cont;
+    rows.iter().filter(|row| row.len() > 0 )
+        .map(|row| row.to_string()).collect()
 }
 
 #[test]
 fn test_split_within() {
     fn t(s: &str, i: usize, u: &[String]) {
-        let mut v = Vec::new();
-        each_split_within(s, i, |s| { v.push(s.to_string()); true });
+        let v = each_split_within(&(s.to_string()), i);
         assert!(v.iter().zip(u.iter()).all(|(a,b)| a == b));
     }
     t("", 0, &[]);
@@ -1046,7 +957,9 @@ fn test_split_within() {
         "Little lamb".to_string()
     ]);
     t("\nMary had a little lamb\nLittle lamb\n", ::std::usize::MAX,
-        &["Mary had a little lamb\nLittle lamb".to_string()]);
+        &["Mary had a little lamb".to_string(),
+        "Little lamb".to_string()
+    ]);
 }
 
 #[cfg(test)]
@@ -1826,6 +1739,69 @@ Options:
         debug!("generated: <<{}>>", usage);
         assert!(usage == expected)
     }
+
+    #[test]
+    fn test_usage_description_newline_handling() {
+        let mut opts = Options::new();
+        opts.optflag("k", "k\u{2013}w\u{2013}",
+            "The word kiwi is normally spelled with two i's");
+        opts.optflag("a", "apple",
+            "This description forces a new line.\n Here is a premature\n\
+            newline");
+
+        let expected =
+"Usage: fruits
+
+Options:
+    -k, --k–w–          The word kiwi is normally spelled with two i's
+    -a, --apple         This description forces a new line.
+                        Here is a premature
+                        newline
+";
+
+        let usage = opts.usage("Usage: fruits");
+
+        debug!("expected: <<{}>>", expected);
+        debug!("generated: <<{}>>", usage);
+        assert!(usage == expected)
+    }
+
+    #[test]
+    fn test_usage_multiwidth() {
+        let mut opts = Options::new();
+        opts.optflag("a", "apple",        "apple description");
+        opts.optflag("b", "banana\u{00AB}", "banana description");
+        opts.optflag("c", "brûlée", "brûlée quite long description");
+        opts.optflag("k", "kiwi\u{20AC}",   "kiwi description");
+        opts.optflag("o", "orange\u{2039}", "orange description");
+        opts.optflag("r", "raspberry-but-making-this-option-way-too-long",
+            "raspberry description is also quite long indeed longer than \
+            every other piece of text we might encounter here and thus will \
+            be automatically broken up"
+        );
+
+        let expected =
+"Usage: fruits
+
+Options:
+    -a, --apple         apple description
+    -b, --banana«       banana description
+    -c, --brûlée        brûlée quite long description
+    -k, --kiwi€         kiwi description
+    -o, --orange‹       orange description
+    -r, --raspberry-but-making-this-option-way-too-long 
+                        raspberry description is also quite long indeed longer
+                        than every other piece of text we might encounter here
+                        and thus will be automatically broken up
+";
+
+        let usage = opts.usage("Usage: fruits");
+
+        debug!("expected: <<{}>>", expected);
+        debug!("generated: <<{}>>", usage);
+        assert!(usage == expected)
+    }
+
 
     #[test]
     fn test_usage_short_only() {
