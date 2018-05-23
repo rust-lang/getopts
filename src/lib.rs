@@ -571,16 +571,7 @@ impl Options {
     // auto handle sufficient options like --help and --version, using which
     // parse() can gracefully handle missing `required-options`.
     fn has_sufficient_opt(&self, opts: &Vec<Opt>) -> bool {
-        opts.iter().any(|opt|
-            match opt.name {
-                Long(ref s) =>
-                    match s.as_ref() {
-                        "help" | "version" => true,
-                        _ => false
-                    },
-                _ => false
-            }
-        )
+        opts.iter().any(|opt| opt.occur == Sufficient)
     }
 }
 
@@ -636,6 +627,8 @@ pub enum Occur {
     Optional,
     /// The option occurs zero or more times.
     Multi,
+    /// The option occurs once and sufficient to parse without Req options.
+    Sufficient,
 }
 
 /// A description of a possible option.
@@ -2039,7 +2032,7 @@ Options:
 
             let mut opts = Options::new();
             opts.reqopt("t", "test", "testing", "TEST");
-            opts.optflag(s, l, "Description");
+            opts.opt(s, l, "Description", "", super::No, super::Sufficient);
             let args = vec!(suff_opt[2]);
             let matches = &match opts.parse(args) {
                 Ok(m) => m,
