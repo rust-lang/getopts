@@ -104,6 +104,7 @@
                      reason = "use the crates.io `getopts` library instead"))]
 
 #[cfg(test)] #[macro_use] extern crate log;
+extern crate unicode_width;
 
 
 use self::Name::*;
@@ -118,7 +119,6 @@ use std::fmt;
 use std::iter::{repeat, IntoIterator};
 use std::result;
 
-extern crate unicode_width;
 use unicode_width::UnicodeWidthStr;
 
 /// A description of the options that a program can handle.
@@ -905,24 +905,25 @@ fn format_option(opt: &OptGroup) -> String {
 /// each of them at most `lim` bytes long, if possible. The substrings
 /// have leading and trailing whitespace removed, and are only cut at
 /// whitespace boundaries.
-///
-/// Note: Function was moved here from `std::str` because this module
-/// is the only place that uses it, and because it was too specific for
-/// a general string function.
-fn each_split_within(desc: &String, lim: usize) -> Vec<String> {
+fn each_split_within(desc: &str, lim: usize) -> Vec<String> {
     let mut rows = Vec::new();
     for line in desc.trim().lines() {
-        let mut words = Vec::new();
-        let mut word = String::new();
-        for ch in line.chars() {
-            if !ch.is_whitespace() {
-                word.push(ch);
-                continue
+        let line_chars = line.chars().chain(Some(' '));
+        let words = line_chars.fold( (Vec::new(), 0, 0), |(mut words, a, z), c | {
+            let idx = z + c.len_utf8(); // Get the current byte offset
+
+            // If the char is whitespace, advance the word start and maybe push a word
+            if c.is_whitespace() {
+                if a != z {
+                    words.push(&line[a..z]);
+                }
+                (words, idx, idx)
             }
-            words.push(word);
-            word = String::new();
-        }
-        words.push(word);
+            // If the char is not whitespace, continue, retaining the current
+            else {
+                (words, a, idx)
+            }
+        }).0;
 
         let mut row = String::new();
         for word in words.iter().filter(|word| word.len() > 0) {
