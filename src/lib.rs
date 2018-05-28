@@ -281,6 +281,13 @@ impl Options {
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
+    ///
+    /// NOTE: Options::parse() will error out if required-options are not
+    /// supplied. But there are cases when declaring required options, it might
+    /// come in conflict with options like `--help` and `--version`, which when
+    /// supplied shall allow Options::parse() to succeed even when required
+    /// options are not supplied. In such cases supply HasArg as `Sufficient`
+    /// while declaring `--help` or `--version` option.
     pub fn reqopt(&mut self, short_name: &str, long_name: &str, desc: &str, hint: &str)
                           -> &mut Options {
         validate_names(short_name, long_name);
@@ -427,7 +434,8 @@ impl Options {
             if opt.occur != Multi && vals.len() > 1 {
                 return Err(OptionDuplicated(opt.name.to_string()));
             }
-            // gracefully handle help, version flags, missing required options.
+            // gracefully handle missing required options, if sufficient
+            // option is found.
             if self.has_sufficient_opt(&opts) {
                 continue;
             }
