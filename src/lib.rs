@@ -842,13 +842,26 @@ impl Matches {
         }
     }
 
-    /// Returns the matching value or `None`.
+    /// Returns some matching value or `None`.
     ///
-    /// Similar to opt_default, except the two differences. Instead of
-    /// returning None when option was not present, return `def`. Instead of
-    /// returning &str slice return valued of type T parsed using str::parse().
-    pub fn opt_get<T>(&self, nm: &str, def: T)
-        -> result::Result<T, <T as FromStr>::Err> where T: FromStr
+    /// Similar to opt_str, also converts matching argument using FromStr.
+    pub fn opt_get<T>(&self, nm: &str) -> result::Result<Option<T>, T::Err>
+        where T: FromStr
+    {
+        match self.opt_val(nm) {
+            Some(Val(s)) => Ok(Some(s.parse()?)),
+            Some(Given) => Ok(None),
+            None => Ok(None),
+        }
+    }
+
+    /// Returns a matching value or default.
+    ///
+    /// Similar to opt_default, except the two differences.
+    /// Instead of returning None when argument was not present, return `def`.
+    /// Instead of returning &str return type T, parsed using str::parse().
+    pub fn opt_get_default<T>(&self, nm: &str, def: T)
+        -> result::Result<T, T::Err> where T: FromStr
     {
         match self.opt_val(nm) {
             Some(Val(s)) => s.parse(),
@@ -2068,11 +2081,35 @@ Options:
             Ok(m) => m,
             Err(e) => panic!("{}", e)
         };
-        let h_arg =matches.opt_get("help", 10);
+        let h_arg = matches.opt_get::<i32>("help");
+        assert_eq!(h_arg, Ok(None));
+        let i_arg = matches.opt_get("i");
+        assert_eq!(i_arg, Ok(Some(true)));
+        let p_arg = matches.opt_get("p");
+        assert_eq!(p_arg, Ok(Some(1.1)));
+    }
+
+    #[test]
+    fn test_opt_get_default() {
+        let mut opts = Options::new();
+        opts.optflag("h", "help", "Description");
+        opts.optflagopt("i", "ignore", "Description", "true | false");
+        opts.optflagopt("r", "run", "Description", "0 .. 10");
+        opts.optflagopt("p", "percent", "Description", "0.0 .. 10.0");
+        opts.long_only(false);
+
+        let args: Vec<String> = [
+            "-i", "true", "-p", "1.1"
+        ].iter().map(|x| x.to_string()).collect();
+        let matches = &match opts.parse(&args) {
+            Ok(m) => m,
+            Err(e) => panic!("{}", e)
+        };
+        let h_arg =matches.opt_get_default("help", 10);
         assert_eq!(h_arg, Ok(10));
-        let i_arg = matches.opt_get("i", false);
+        let i_arg = matches.opt_get_default("i", false);
         assert_eq!(i_arg, Ok(true));
-        let p_arg = matches.opt_get("p", 10.2);
+        let p_arg = matches.opt_get_default("p", 10.2);
         assert_eq!(p_arg, Ok(1.1));
     }
 }
