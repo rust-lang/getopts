@@ -926,22 +926,28 @@ fn each_split_within(desc: &str, lim: usize) -> Vec<String> {
         }).0;
 
         let mut row = String::new();
-        for word in words.iter().filter(|word| word.len() > 0) {
-            let mut width = row.width() + word.width();
-            if row.len() > 0 { width += " ".width(); }
+        for word in words.iter() {
+            let sep = if row.len() > 0 { Some(" ") } else { None };
+            let width = row.width()
+                + word.width()
+                + sep.map(UnicodeWidthStr::width).unwrap_or(0);
+
             if width <= lim {
-                if row.len() > 0 { row.push_str(" ") }
+                if let Some(sep) = sep { row.push_str(sep) }
                 row.push_str(word);
                 continue
             }
-            rows.push(row.trim().to_string());
-            row = String::new();
+            if row.len() > 0 {
+                rows.push(row.clone());
+                row.clear();
+            }
             row.push_str(word);
         }
-        rows.push(row.trim().to_string());
+        if row.len() > 0 {
+            rows.push(row);
+        }
     }
-    rows.iter().filter(|row| row.len() > 0 )
-        .map(|row| row.to_string()).collect()
+    rows
 }
 
 #[test]
