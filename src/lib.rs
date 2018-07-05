@@ -94,7 +94,7 @@
 
 #![doc(html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
        html_favicon_url = "https://www.rust-lang.org/favicon.ico",
-       html_root_url = "https://doc.rust-lang.org/getopts/")]
+       html_root_url = "https://docs.rs/getopts/0.2.18")]
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
 #![cfg_attr(rust_build, feature(staged_api))]
