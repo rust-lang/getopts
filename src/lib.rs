@@ -121,6 +121,7 @@ use std::str::FromStr;
 
 use unicode_width::UnicodeWidthStr;
 
+#[cfg(test)]
 mod tests;
 
 /// A description of the options that a program can handle.
