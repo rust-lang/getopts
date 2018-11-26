@@ -1,31 +1,39 @@
-use super::{HasArg, Name, Occur, Opt, Options, ParsingStyle};
-use super::Fail::*;
 use super::each_split_within;
+use super::Fail::*;
+use super::{HasArg, Name, Occur, Opt, Options, ParsingStyle};
 
 #[test]
 fn test_split_within() {
     fn t(s: &str, i: usize, u: &[String]) {
         let v = each_split_within(&(s.to_string()), i);
-        assert!(v.iter().zip(u.iter()).all(|(a,b)| a == b));
+        assert!(v.iter().zip(u.iter()).all(|(a, b)| a == b));
     }
     t("", 0, &[]);
     t("", 15, &[]);
     t("hello", 15, &["hello".to_string()]);
-    t("\nMary had a little lamb\nLittle lamb\n", 15, &[
-        "Mary had a".to_string(),
-        "little lamb".to_string(),
-        "Little lamb".to_string()
-    ]);
-    t("\nMary had a little lamb\nLittle lamb\n", ::std::usize::MAX,
-      &["Mary had a little lamb".to_string(),
-          "Little lamb".to_string()
-      ]);
+    t(
+        "\nMary had a little lamb\nLittle lamb\n",
+        15,
+        &[
+            "Mary had a".to_string(),
+            "little lamb".to_string(),
+            "Little lamb".to_string(),
+        ],
+    );
+    t(
+        "\nMary had a little lamb\nLittle lamb\n",
+        ::std::usize::MAX,
+        &[
+            "Mary had a little lamb".to_string(),
+            "Little lamb".to_string(),
+        ],
+    );
 }
 
 // Tests for reqopt
 #[test]
 fn test_reqopt() {
-    let long_args = vec!("--test=20".to_string());
+    let long_args = vec!["--test=20".to_string()];
     let mut opts = Options::new();
     opts.reqopt("t", "test", "testing", "TEST");
     match opts.parse(&long_args) {
@@ -35,9 +43,11 @@ fn test_reqopt() {
             assert!(m.opt_present("t"));
             assert_eq!(m.opt_str("t").unwrap(), "20");
         }
-        _ => { panic!("test_reqopt failed (long arg)"); }
+        _ => {
+            panic!("test_reqopt failed (long arg)");
+        }
     }
-    let short_args = vec!("-t".to_string(), "20".to_string());
+    let short_args = vec!["-t".to_string(), "20".to_string()];
     match opts.parse(&short_args) {
         Ok(ref m) => {
             assert!((m.opt_present("test")));
@@ -45,52 +55,56 @@ fn test_reqopt() {
             assert!((m.opt_present("t")));
             assert_eq!(m.opt_str("t").unwrap(), "20");
         }
-        _ => { panic!("test_reqopt failed (short arg)"); }
+        _ => {
+            panic!("test_reqopt failed (short arg)");
+        }
     }
 }
 
 #[test]
 fn test_reqopt_missing() {
-    let args = vec!("blah".to_string());
+    let args = vec!["blah".to_string()];
     match Options::new()
         .reqopt("t", "test", "testing", "TEST")
-        .parse(&args) {
-        Err(OptionMissing(_)) => {},
-        _ => panic!()
+        .parse(&args)
+    {
+        Err(OptionMissing(_)) => {}
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_reqopt_no_arg() {
-    let long_args = vec!("--test".to_string());
+    let long_args = vec!["--test".to_string()];
     let mut opts = Options::new();
     opts.reqopt("t", "test", "testing", "TEST");
     match opts.parse(&long_args) {
-        Err(ArgumentMissing(_)) => {},
-        _ => panic!()
+        Err(ArgumentMissing(_)) => {}
+        _ => panic!(),
     }
-    let short_args = vec!("-t".to_string());
+    let short_args = vec!["-t".to_string()];
     match opts.parse(&short_args) {
-        Err(ArgumentMissing(_)) => {},
-        _ => panic!()
+        Err(ArgumentMissing(_)) => {}
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_reqopt_multi() {
-    let args = vec!("--test=20".to_string(), "-t".to_string(), "30".to_string());
+    let args = vec!["--test=20".to_string(), "-t".to_string(), "30".to_string()];
     match Options::new()
         .reqopt("t", "test", "testing", "TEST")
-        .parse(&args) {
-        Err(OptionDuplicated(_)) => {},
-        _ => panic!()
+        .parse(&args)
+    {
+        Err(OptionDuplicated(_)) => {}
+        _ => panic!(),
     }
 }
 
 // Tests for optopt
 #[test]
 fn test_optopt() {
-    let long_args = vec!("--test=20".to_string());
+    let long_args = vec!["--test=20".to_string()];
     let mut opts = Options::new();
     opts.optopt("t", "test", "testing", "TEST");
     match opts.parse(&long_args) {
@@ -100,9 +114,9 @@ fn test_optopt() {
             assert!((m.opt_present("t")));
             assert_eq!(m.opt_str("t").unwrap(), "20");
         }
-        _ => panic!()
+        _ => panic!(),
     }
-    let short_args = vec!("-t".to_string(), "20".to_string());
+    let short_args = vec!["-t".to_string(), "20".to_string()];
     match opts.parse(&short_args) {
         Ok(ref m) => {
             assert!((m.opt_present("test")));
@@ -110,55 +124,57 @@ fn test_optopt() {
             assert!((m.opt_present("t")));
             assert_eq!(m.opt_str("t").unwrap(), "20");
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optopt_missing() {
-    let args = vec!("blah".to_string());
+    let args = vec!["blah".to_string()];
     match Options::new()
         .optopt("t", "test", "testing", "TEST")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optopt_no_arg() {
-    let long_args = vec!("--test".to_string());
+    let long_args = vec!["--test".to_string()];
     let mut opts = Options::new();
     opts.optopt("t", "test", "testing", "TEST");
     match opts.parse(&long_args) {
-        Err(ArgumentMissing(_)) => {},
-        _ => panic!()
+        Err(ArgumentMissing(_)) => {}
+        _ => panic!(),
     }
-    let short_args = vec!("-t".to_string());
+    let short_args = vec!["-t".to_string()];
     match opts.parse(&short_args) {
-        Err(ArgumentMissing(_)) => {},
-        _ => panic!()
+        Err(ArgumentMissing(_)) => {}
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optopt_multi() {
-    let args = vec!("--test=20".to_string(), "-t".to_string(), "30".to_string());
+    let args = vec!["--test=20".to_string(), "-t".to_string(), "30".to_string()];
     match Options::new()
         .optopt("t", "test", "testing", "TEST")
-        .parse(&args) {
-        Err(OptionDuplicated(_)) => {},
-        _ => panic!()
+        .parse(&args)
+    {
+        Err(OptionDuplicated(_)) => {}
+        _ => panic!(),
     }
 }
 
 // Tests for optflag
 #[test]
 fn test_optflag() {
-    let long_args = vec!("--test".to_string());
+    let long_args = vec!["--test".to_string()];
     let mut opts = Options::new();
     opts.optflag("t", "test", "testing");
     match opts.parse(&long_args) {
@@ -166,185 +182,183 @@ fn test_optflag() {
             assert!(m.opt_present("test"));
             assert!(m.opt_present("t"));
         }
-        _ => panic!()
+        _ => panic!(),
     }
-    let short_args = vec!("-t".to_string());
+    let short_args = vec!["-t".to_string()];
     match opts.parse(&short_args) {
         Ok(ref m) => {
             assert!(m.opt_present("test"));
             assert!(m.opt_present("t"));
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optflag_missing() {
-    let args = vec!("blah".to_string());
-    match Options::new()
-        .optflag("t", "test", "testing")
-        .parse(&args) {
+    let args = vec!["blah".to_string()];
+    match Options::new().optflag("t", "test", "testing").parse(&args) {
         Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_opt_end() {
     let args = vec!["--".to_owned(), "-t".to_owned()];
-    match Options::new()
-        .optflag("t", "test", "testing")
-        .parse(&args) {
+    match Options::new().optflag("t", "test", "testing").parse(&args) {
         Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
             assert_eq!(m.free.len(), 1);
             assert_eq!(m.free[0], "-t");
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_opt_only_end() {
     let args = vec!["--".to_owned()];
-    match Options::new()
-        .optflag("t", "test", "testing")
-        .parse(&args) {
+    match Options::new().optflag("t", "test", "testing").parse(&args) {
         Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
             assert_eq!(m.free.len(), 0);
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optflag_long_arg() {
-    let args = vec!("--test=20".to_string());
-    match Options::new()
-        .optflag("t", "test", "testing")
-        .parse(&args) {
-        Err(UnexpectedArgument(_)) => {},
-        _ => panic!()
+    let args = vec!["--test=20".to_string()];
+    match Options::new().optflag("t", "test", "testing").parse(&args) {
+        Err(UnexpectedArgument(_)) => {}
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optflag_multi() {
-    let args = vec!("--test".to_string(), "-t".to_string());
-    match Options::new()
-        .optflag("t", "test", "testing")
-        .parse(&args) {
-        Err(OptionDuplicated(_)) => {},
-        _ => panic!()
+    let args = vec!["--test".to_string(), "-t".to_string()];
+    match Options::new().optflag("t", "test", "testing").parse(&args) {
+        Err(OptionDuplicated(_)) => {}
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optflag_short_arg() {
-    let args = vec!("-t".to_string(), "20".to_string());
-    match Options::new()
-        .optflag("t", "test", "testing")
-        .parse(&args) {
+    let args = vec!["-t".to_string(), "20".to_string()];
+    match Options::new().optflag("t", "test", "testing").parse(&args) {
         Ok(ref m) => {
             // The next variable after the flag is just a free argument
 
             assert!(m.free[0] == "20");
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 // Tests for optflagmulti
 #[test]
 fn test_optflagmulti_short1() {
-    let args = vec!("-v".to_string());
+    let args = vec!["-v".to_string()];
     match Options::new()
         .optflagmulti("v", "verbose", "verbosity")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             assert_eq!(m.opt_count("v"), 1);
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optflagmulti_short2a() {
-    let args = vec!("-v".to_string(), "-v".to_string());
+    let args = vec!["-v".to_string(), "-v".to_string()];
     match Options::new()
         .optflagmulti("v", "verbose", "verbosity")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             assert_eq!(m.opt_count("v"), 2);
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optflagmulti_short2b() {
-    let args = vec!("-vv".to_string());
+    let args = vec!["-vv".to_string()];
     match Options::new()
         .optflagmulti("v", "verbose", "verbosity")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             assert_eq!(m.opt_count("v"), 2);
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optflagmulti_long1() {
-    let args = vec!("--verbose".to_string());
+    let args = vec!["--verbose".to_string()];
     match Options::new()
         .optflagmulti("v", "verbose", "verbosity")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             assert_eq!(m.opt_count("verbose"), 1);
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optflagmulti_long2() {
-    let args = vec!("--verbose".to_string(), "--verbose".to_string());
+    let args = vec!["--verbose".to_string(), "--verbose".to_string()];
     match Options::new()
         .optflagmulti("v", "verbose", "verbosity")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             assert_eq!(m.opt_count("verbose"), 2);
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optflagmulti_mix() {
-    let args = vec!("--verbose".to_string(), "-v".to_string(),
-                    "-vv".to_string(), "verbose".to_string());
+    let args = vec![
+        "--verbose".to_string(),
+        "-v".to_string(),
+        "-vv".to_string(),
+        "verbose".to_string(),
+    ];
     match Options::new()
         .optflagmulti("v", "verbose", "verbosity")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             assert_eq!(m.opt_count("verbose"), 4);
             assert_eq!(m.opt_count("v"), 4);
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 // Tests for optflagopt
 #[test]
 fn test_optflagopt() {
-    let long_args = vec!("--test".to_string());
+    let long_args = vec!["--test".to_string()];
     let mut opts = Options::new();
     opts.optflagopt("t", "test", "testing", "ARG");
     match opts.parse(&long_args) {
@@ -352,54 +366,54 @@ fn test_optflagopt() {
             assert!(m.opt_present("test"));
             assert!(m.opt_present("t"));
         }
-        _ => panic!()
+        _ => panic!(),
     }
-    let short_args = vec!("-t".to_string());
+    let short_args = vec!["-t".to_string()];
     match opts.parse(&short_args) {
         Ok(ref m) => {
             assert!(m.opt_present("test"));
             assert!(m.opt_present("t"));
         }
-        _ => panic!()
+        _ => panic!(),
     }
-    let short_args = vec!("-t".to_string(), "x".to_string());
+    let short_args = vec!["-t".to_string(), "x".to_string()];
     match opts.parse(&short_args) {
         Ok(ref m) => {
             assert_eq!(m.opt_str("t").unwrap(), "x");
             assert_eq!(m.opt_str("test").unwrap(), "x");
         }
-        _ => panic!()
+        _ => panic!(),
     }
-    let long_args = vec!("--test=x".to_string());
+    let long_args = vec!["--test=x".to_string()];
     match opts.parse(&long_args) {
         Ok(ref m) => {
             assert_eq!(m.opt_str("t").unwrap(), "x");
             assert_eq!(m.opt_str("test").unwrap(), "x");
         }
-        _ => panic!()
+        _ => panic!(),
     }
-    let long_args = vec!("--test".to_string(), "x".to_string());
+    let long_args = vec!["--test".to_string(), "x".to_string()];
     match opts.parse(&long_args) {
         Ok(ref m) => {
             assert_eq!(m.opt_str("t"), None);
             assert_eq!(m.opt_str("test"), None);
         }
-        _ => panic!()
+        _ => panic!(),
     }
-    let no_args: Vec<String> = vec!();
+    let no_args: Vec<String> = vec![];
     match opts.parse(&no_args) {
         Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 // Tests for optmulti
 #[test]
 fn test_optmulti() {
-    let long_args = vec!("--test=20".to_string());
+    let long_args = vec!["--test=20".to_string()];
     let mut opts = Options::new();
     opts.optmulti("t", "test", "testing", "TEST");
     match opts.parse(&long_args) {
@@ -409,9 +423,9 @@ fn test_optmulti() {
             assert!((m.opt_present("t")));
             assert_eq!(m.opt_str("t").unwrap(), "20");
         }
-        _ => panic!()
+        _ => panic!(),
     }
-    let short_args = vec!("-t".to_string(), "20".to_string());
+    let short_args = vec!["-t".to_string(), "20".to_string()];
     match opts.parse(&short_args) {
         Ok(ref m) => {
             assert!((m.opt_present("test")));
@@ -419,46 +433,48 @@ fn test_optmulti() {
             assert!((m.opt_present("t")));
             assert_eq!(m.opt_str("t").unwrap(), "20");
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optmulti_missing() {
-    let args = vec!("blah".to_string());
+    let args = vec!["blah".to_string()];
     match Options::new()
         .optmulti("t", "test", "testing", "TEST")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optmulti_no_arg() {
-    let long_args = vec!("--test".to_string());
+    let long_args = vec!["--test".to_string()];
     let mut opts = Options::new();
     opts.optmulti("t", "test", "testing", "TEST");
     match opts.parse(&long_args) {
-        Err(ArgumentMissing(_)) => {},
-        _ => panic!()
+        Err(ArgumentMissing(_)) => {}
+        _ => panic!(),
     }
-    let short_args = vec!("-t".to_string());
+    let short_args = vec!["-t".to_string()];
     match opts.parse(&short_args) {
-        Err(ArgumentMissing(_)) => {},
-        _ => panic!()
+        Err(ArgumentMissing(_)) => {}
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_optmulti_multi() {
-    let args = vec!("--test=20".to_string(), "-t".to_string(), "30".to_string());
+    let args = vec!["--test=20".to_string(), "-t".to_string(), "30".to_string()];
     match Options::new()
         .optmulti("t", "test", "testing", "TEST")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             assert!(m.opt_present("test"));
             assert_eq!(m.opt_str("test").unwrap(), "20");
@@ -468,57 +484,58 @@ fn test_optmulti_multi() {
             assert!(pair[0] == "20");
             assert!(pair[1] == "30");
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_free_argument_is_hyphen() {
-    let args = vec!("-".to_string());
+    let args = vec!["-".to_string()];
     match Options::new().parse(&args) {
         Ok(ref m) => {
             assert_eq!(m.free.len(), 1);
             assert_eq!(m.free[0], "-");
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_unrecognized_option() {
-    let long_args = vec!("--untest".to_string());
+    let long_args = vec!["--untest".to_string()];
     let mut opts = Options::new();
     opts.optmulti("t", "test", "testing", "TEST");
     match opts.parse(&long_args) {
-        Err(UnrecognizedOption(_)) => {},
-        _ => panic!()
+        Err(UnrecognizedOption(_)) => {}
+        _ => panic!(),
     }
-    let short_args = vec!("-u".to_string());
+    let short_args = vec!["-u".to_string()];
     match opts.parse(&short_args) {
-        Err(UnrecognizedOption(_)) => {},
-        _ => panic!()
+        Err(UnrecognizedOption(_)) => {}
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_combined() {
-    let args =
-        vec!("prog".to_string(),
-             "free1".to_string(),
-             "-s".to_string(),
-             "20".to_string(),
-             "free2".to_string(),
-             "--flag".to_string(),
-             "--long=30".to_string(),
-             "-f".to_string(),
-             "-m".to_string(),
-             "40".to_string(),
-             "-m".to_string(),
-             "50".to_string(),
-             "-n".to_string(),
-             "-A B".to_string(),
-             "-n".to_string(),
-             "-60 70".to_string());
+    let args = vec![
+        "prog".to_string(),
+        "free1".to_string(),
+        "-s".to_string(),
+        "20".to_string(),
+        "free2".to_string(),
+        "--flag".to_string(),
+        "--long=30".to_string(),
+        "-f".to_string(),
+        "-m".to_string(),
+        "40".to_string(),
+        "-m".to_string(),
+        "50".to_string(),
+        "-n".to_string(),
+        "-A B".to_string(),
+        "-n".to_string(),
+        "-60 70".to_string(),
+    ];
     match Options::new()
         .optopt("s", "something", "something", "SOMETHING")
         .optflag("", "flag", "a flag")
@@ -527,7 +544,8 @@ fn test_combined() {
         .optmulti("m", "", "mmmmmm", "YUM")
         .optmulti("n", "", "nothing", "NOTHING")
         .optopt("", "notpresent", "nothing to see here", "NOPE")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             assert!(m.free[0] == "prog");
             assert!(m.free[1] == "free1");
@@ -544,22 +562,24 @@ fn test_combined() {
             assert!(pair[1] == "-60 70");
             assert!((!m.opt_present("notpresent")));
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_mixed_stop() {
-    let args =
-        vec!("-a".to_string(),
-             "b".to_string(),
-             "-c".to_string(),
-             "d".to_string());
+    let args = vec![
+        "-a".to_string(),
+        "b".to_string(),
+        "-c".to_string(),
+        "d".to_string(),
+    ];
     match Options::new()
         .parsing_style(ParsingStyle::StopAtFirstFree)
         .optflag("a", "", "")
         .optopt("c", "", "", "")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             println!("{}", m.opt_present("c"));
             assert!(m.opt_present("a"));
@@ -569,22 +589,24 @@ fn test_mixed_stop() {
             assert_eq!(m.free[1], "-c");
             assert_eq!(m.free[2], "d");
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
 #[test]
 fn test_mixed_stop_hyphen() {
-    let args =
-        vec!("-a".to_string(),
-             "-".to_string(),
-             "-c".to_string(),
-             "d".to_string());
+    let args = vec![
+        "-a".to_string(),
+        "-".to_string(),
+        "-c".to_string(),
+        "d".to_string(),
+    ];
     match Options::new()
         .parsing_style(ParsingStyle::StopAtFirstFree)
         .optflag("a", "", "")
         .optopt("c", "", "", "")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(ref m) => {
             println!("{}", m.opt_present("c"));
             assert!(m.opt_present("a"));
@@ -594,7 +616,7 @@ fn test_mixed_stop_hyphen() {
             assert_eq!(m.free[1], "-c");
             assert_eq!(m.free[2], "d");
         }
-        _ => panic!()
+        _ => panic!(),
     }
 }
 
@@ -605,10 +627,10 @@ fn test_multi() {
     opts.optopt("", "encrypt", "encrypt", "ENCRYPT");
     opts.optopt("f", "", "flag", "FLAG");
 
-    let args_single = vec!("-e".to_string(), "foo".to_string());
+    let args_single = vec!["-e".to_string(), "foo".to_string()];
     let matches_single = &match opts.parse(&args_single) {
         Ok(m) => m,
-        Err(_) => panic!()
+        _ => panic!(),
     };
     assert!(matches_single.opts_present(&["e".to_string()]));
     assert!(matches_single.opts_present(&["encrypt".to_string(), "e".to_string()]));
@@ -618,16 +640,28 @@ fn test_multi() {
     assert!(!matches_single.opts_present(&[]));
 
     assert_eq!(matches_single.opts_str(&["e".to_string()]).unwrap(), "foo");
-    assert_eq!(matches_single.opts_str(&["e".to_string(), "encrypt".to_string()]).unwrap(),
-               "foo");
-    assert_eq!(matches_single.opts_str(&["encrypt".to_string(), "e".to_string()]).unwrap(),
-               "foo");
+    assert_eq!(
+        matches_single
+            .opts_str(&["e".to_string(), "encrypt".to_string()])
+            .unwrap(),
+        "foo"
+    );
+    assert_eq!(
+        matches_single
+            .opts_str(&["encrypt".to_string(), "e".to_string()])
+            .unwrap(),
+        "foo"
+    );
 
-    let args_both = vec!("-e".to_string(), "foo".to_string(), "--encrypt".to_string(),
-                         "foo".to_string());
+    let args_both = vec![
+        "-e".to_string(),
+        "foo".to_string(),
+        "--encrypt".to_string(),
+        "foo".to_string(),
+    ];
     let matches_both = &match opts.parse(&args_both) {
         Ok(m) => m,
-        Err(_) => panic!()
+        _ => panic!(),
     };
     assert!(matches_both.opts_present(&["e".to_string()]));
     assert!(matches_both.opts_present(&["encrypt".to_string()]));
@@ -638,39 +672,51 @@ fn test_multi() {
     assert!(!matches_both.opts_present(&[]));
 
     assert_eq!(matches_both.opts_str(&["e".to_string()]).unwrap(), "foo");
-    assert_eq!(matches_both.opts_str(&["encrypt".to_string()]).unwrap(), "foo");
-    assert_eq!(matches_both.opts_str(&["e".to_string(), "encrypt".to_string()]).unwrap(),
-               "foo");
-    assert_eq!(matches_both.opts_str(&["encrypt".to_string(), "e".to_string()]).unwrap(),
-               "foo");
+    assert_eq!(
+        matches_both.opts_str(&["encrypt".to_string()]).unwrap(),
+        "foo"
+    );
+    assert_eq!(
+        matches_both
+            .opts_str(&["e".to_string(), "encrypt".to_string()])
+            .unwrap(),
+        "foo"
+    );
+    assert_eq!(
+        matches_both
+            .opts_str(&["encrypt".to_string(), "e".to_string()])
+            .unwrap(),
+        "foo"
+    );
 }
 
 #[test]
 fn test_nospace() {
-    let args = vec!("-Lfoo".to_string(), "-M.".to_string());
+    let args = vec!["-Lfoo".to_string(), "-M.".to_string()];
     let matches = &match Options::new()
         .optmulti("L", "", "library directory", "LIB")
         .optmulti("M", "", "something", "MMMM")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(m) => m,
-        Err(_) => panic!()
+        _ => panic!(),
     };
     assert!(matches.opts_present(&["L".to_string()]));
     assert_eq!(matches.opts_str(&["L".to_string()]).unwrap(), "foo");
     assert!(matches.opts_present(&["M".to_string()]));
     assert_eq!(matches.opts_str(&["M".to_string()]).unwrap(), ".");
-
 }
 
 #[test]
 fn test_nospace_conflict() {
-    let args = vec!("-vvLverbose".to_string(), "-v".to_string() );
+    let args = vec!["-vvLverbose".to_string(), "-v".to_string()];
     let matches = &match Options::new()
         .optmulti("L", "", "library directory", "LIB")
         .optflagmulti("v", "verbose", "Verbose")
-        .parse(&args) {
+        .parse(&args)
+    {
         Ok(m) => m,
-        Err(e) => panic!( "{}", e )
+        Err(e) => panic!("{}", e),
     };
     assert!(matches.opts_present(&["L".to_string()]));
     assert_eq!(matches.opts_str(&["L".to_string()]).unwrap(), "verbose");
@@ -686,19 +732,21 @@ fn test_long_to_short() {
         occur: Occur::Req,
         aliases: Vec::new(),
     };
-    short.aliases = vec!(Opt { name: Name::Short('b'),
+    short.aliases = vec![Opt {
+        name: Name::Short('b'),
         hasarg: HasArg::Yes,
         occur: Occur::Req,
-        aliases: Vec::new() });
+        aliases: Vec::new(),
+    }];
     let mut opts = Options::new();
     opts.reqopt("b", "banana", "some bananas", "VAL");
-    let ref verbose = opts.grps[0];
+    let verbose = &opts.grps[0];
     assert!(verbose.long_to_short() == short);
 }
 
 #[test]
 fn test_aliases_long_and_short() {
-    let args = vec!("-a".to_string(), "--apple".to_string(), "-a".to_string());
+    let args = vec!["-a".to_string(), "--apple".to_string(), "-a".to_string()];
 
     let matches = Options::new()
         .optflagmulti("a", "apple", "Desc")
@@ -712,15 +760,13 @@ fn test_aliases_long_and_short() {
 fn test_usage() {
     let mut opts = Options::new();
     opts.reqopt("b", "banana", "Desc", "VAL");
-    opts.optopt("a", "012345678901234567890123456789",
-                "Desc", "VAL");
+    opts.optopt("a", "012345678901234567890123456789", "Desc", "VAL");
     opts.optflag("k", "kiwi", "Desc");
     opts.optflagopt("p", "", "Desc", "VAL");
     opts.optmulti("l", "", "Desc", "VAL");
     opts.optflag("", "starfruit", "Starfruit");
 
-    let expected =
-"Usage: fruits
+    let expected = "Usage: fruits
 
 Options:
     -b, --banana VAL    Desc
@@ -745,15 +791,23 @@ fn test_usage_description_wrapping() {
     // lines wrap after 78: or rather descriptions wrap after 54
 
     let mut opts = Options::new();
-    opts.optflag("k", "kiwi",
-                 "This is a long description which won't be wrapped..+.."); // 54
-    opts.optflag("a", "apple",
-                 "This is a long description which _will_ be wrapped..+..");
-    opts.optflag("b", "banana",
-                 "HereWeNeedOneSingleWordThatIsLongerThanTheWrappingLengthAndThisIsIt");
+    opts.optflag(
+        "k",
+        "kiwi",
+        "This is a long description which won't be wrapped..+..",
+    ); // 54
+    opts.optflag(
+        "a",
+        "apple",
+        "This is a long description which _will_ be wrapped..+..",
+    );
+    opts.optflag(
+        "b",
+        "banana",
+        "HereWeNeedOneSingleWordThatIsLongerThanTheWrappingLengthAndThisIsIt",
+    );
 
-    let expected =
-"Usage: fruits
+    let expected = "Usage: fruits
 
 Options:
     -k, --kiwi          This is a long description which won't be wrapped..+..
@@ -772,14 +826,19 @@ Options:
 #[test]
 fn test_usage_description_multibyte_handling() {
     let mut opts = Options::new();
-    opts.optflag("k", "k\u{2013}w\u{2013}",
-                 "The word kiwi is normally spelled with two i's");
-    opts.optflag("a", "apple",
-                 "This \u{201C}description\u{201D} has some characters that could \
-confuse the line wrapping; an apple costs 0.51€ in some parts of Europe.");
+    opts.optflag(
+        "k",
+        "k\u{2013}w\u{2013}",
+        "The word kiwi is normally spelled with two i's",
+    );
+    opts.optflag(
+        "a",
+        "apple",
+        "This \u{201C}description\u{201D} has some characters that could \
+         confuse the line wrapping; an apple costs 0.51€ in some parts of Europe.",
+    );
 
-    let expected =
-"Usage: fruits
+    let expected = "Usage: fruits
 
 Options:
     -k, --k–w–          The word kiwi is normally spelled with two i's
@@ -798,14 +857,19 @@ Options:
 #[test]
 fn test_usage_description_newline_handling() {
     let mut opts = Options::new();
-    opts.optflag("k", "k\u{2013}w\u{2013}",
-                 "The word kiwi is normally spelled with two i's");
-    opts.optflag("a", "apple",
-                 "This description forces a new line.\n Here is a premature\n\
-        newline");
+    opts.optflag(
+        "k",
+        "k\u{2013}w\u{2013}",
+        "The word kiwi is normally spelled with two i's",
+    );
+    opts.optflag(
+        "a",
+        "apple",
+        "This description forces a new line.\n Here is a premature\n\
+         newline",
+    );
 
-    let expected =
-"Usage: fruits
+    let expected = "Usage: fruits
 
 Options:
     -k, --k–w–          The word kiwi is normally spelled with two i's
@@ -824,19 +888,20 @@ Options:
 #[test]
 fn test_usage_multiwidth() {
     let mut opts = Options::new();
-    opts.optflag("a", "apple",        "apple description");
+    opts.optflag("a", "apple", "apple description");
     opts.optflag("b", "banana\u{00AB}", "banana description");
     opts.optflag("c", "brûlée", "brûlée quite long description");
-    opts.optflag("k", "kiwi\u{20AC}",   "kiwi description");
+    opts.optflag("k", "kiwi\u{20AC}", "kiwi description");
     opts.optflag("o", "orange\u{2039}", "orange description");
-    opts.optflag("r", "raspberry-but-making-this-option-way-too-long",
-                 "raspberry description is also quite long indeed longer than \
-        every other piece of text we might encounter here and thus will \
-        be automatically broken up"
+    opts.optflag(
+        "r",
+        "raspberry-but-making-this-option-way-too-long",
+        "raspberry description is also quite long indeed longer than \
+         every other piece of text we might encounter here and thus will \
+         be automatically broken up",
     );
 
-    let expected =
-"Usage: fruits
+    let expected = "Usage: fruits
 
 Options:
     -a, --apple         apple description
@@ -857,7 +922,6 @@ Options:
     assert!(usage == expected)
 }
 
-
 #[test]
 fn test_usage_short_only() {
     let mut opts = Options::new();
@@ -865,8 +929,7 @@ fn test_usage_short_only() {
     opts.optflag("s", "", "Starfruit");
     opts.optflagopt("a", "", "Apple", "TYPE");
 
-    let expected =
-"Usage: fruits
+    let expected = "Usage: fruits
 
 Options:
     -k VAL              Kiwi
@@ -887,8 +950,7 @@ fn test_usage_long_only() {
     opts.optflag("", "starfruit", "Starfruit");
     opts.optflagopt("", "apple", "Apple", "TYPE");
 
-    let expected =
-"Usage: fruits
+    let expected = "Usage: fruits
 
 Options:
     --kiwi VAL          Kiwi
@@ -906,8 +968,7 @@ Options:
 fn test_short_usage() {
     let mut opts = Options::new();
     opts.reqopt("b", "banana", "Desc", "VAL");
-    opts.optopt("a", "012345678901234567890123456789",
-                "Desc", "VAL");
+    opts.optopt("a", "012345678901234567890123456789", "Desc", "VAL");
     opts.optflag("k", "kiwi", "Desc");
     opts.optflagopt("p", "", "Desc", "VAL");
     opts.optmulti("l", "", "Desc", "VAL");
@@ -934,11 +995,14 @@ fn test_args_with_equals() {
     opts.optopt("o", "one", "One", "INFO");
     opts.optopt("t", "two", "Two", "INFO");
 
-    let args = vec!("--one".to_string(), "A=B".to_string(),
-                    "--two=C=D".to_string());
+    let args = vec![
+        "--one".to_string(),
+        "A=B".to_string(),
+        "--two=C=D".to_string(),
+    ];
     let matches = &match opts.parse(&args) {
         Ok(m) => m,
-        Err(e) => panic!("{}", e)
+        Err(e) => panic!("{}", e),
     };
     assert_eq!(matches.opts_str(&["o".to_string()]).unwrap(), "A=B");
     assert_eq!(matches.opts_str(&["t".to_string()]).unwrap(), "C=D");
@@ -951,8 +1015,7 @@ fn test_long_only_usage() {
     opts.optflag("k", "kiwi", "Description");
     opts.optflag("a", "apple", "Description");
 
-    let expected =
-"Usage: fruits
+    let expected = "Usage: fruits
 
 Options:
     -k, -kiwi           Description
@@ -977,11 +1040,20 @@ fn test_long_only_mode() {
     opts.optopt("e", "", "Description", "X");
     opts.optopt("", "fruit", "Description", "X");
 
-    let args = vec!("-a", "A", "-b=B", "--c=C", "-durian", "D", "--e", "E",
-                    "-fruit=any");
+    let args = vec![
+        "-a",
+        "A",
+        "-b=B",
+        "--c=C",
+        "-durian",
+        "D",
+        "--e",
+        "E",
+        "-fruit=any",
+    ];
     let matches = &match opts.parse(&args) {
         Ok(m) => m,
-        Err(e) => panic!("{}", e)
+        Err(e) => panic!("{}", e),
     };
     assert_eq!(matches.opts_str(&["a".to_string()]).unwrap(), "A");
     assert_eq!(matches.opts_str(&["b".to_string()]).unwrap(), "B");
@@ -999,10 +1071,10 @@ fn test_long_only_mode_no_short_parse() {
     opts.optflag("i", "ignore", "Description");
     opts.optflag("", "hi", "Description");
 
-    let args = vec!("-hi");
+    let args = vec!["-hi"];
     let matches = &match opts.parse(&args) {
         Ok(m) => m,
-        Err(e) => panic!("{}", e)
+        Err(e) => panic!("{}", e),
     };
     assert!(matches.opt_present("hi"));
     assert!(!matches.opt_present("h"));
@@ -1021,10 +1093,10 @@ fn test_normal_mode_no_long_parse() {
     opts.optflag("", "hi", "Description");
     opts.long_only(false);
 
-    let args = vec!("-hi");
+    let args = vec!["-hi"];
     let matches = &match opts.parse(&args) {
         Ok(m) => m,
-        Err(e) => panic!("{}", e)
+        Err(e) => panic!("{}", e),
     };
     assert!(!matches.opt_present("hi"));
     assert!(matches.opt_present("h"));
@@ -1046,7 +1118,7 @@ fn test_undefined_opt_present() {
     let args = vec!["-h"];
     match opts.parse(args) {
         Ok(matches) => assert!(!matches.opt_present("undefined")),
-        Err(e) => panic!("{}", e)
+        Err(e) => panic!("{}", e),
     }
 }
 
@@ -1058,11 +1130,10 @@ fn test_opt_default() {
     opts.optflag("r", "run", "Description");
     opts.long_only(false);
 
-    let args: Vec<String> = ["-i", "-r", "10"]
-        .iter().map(|x| x.to_string()).collect();
+    let args: Vec<String> = ["-i", "-r", "10"].iter().map(|x| x.to_string()).collect();
     let matches = &match opts.parse(&args) {
         Ok(m) => m,
-        Err(e) => panic!("{}", e)
+        Err(e) => panic!("{}", e),
     };
     assert_eq!(matches.opt_default("help", ""), None);
     assert_eq!(matches.opt_default("i", "def"), Some("def".to_string()));
@@ -1077,12 +1148,13 @@ fn test_opt_get() {
     opts.optflagopt("p", "percent", "Description", "0.0 .. 10.0");
     opts.long_only(false);
 
-    let args: Vec<String> = [
-        "-i", "true", "-p", "1.1"
-    ].iter().map(|x| x.to_string()).collect();
+    let args: Vec<String> = ["-i", "true", "-p", "1.1"]
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
     let matches = &match opts.parse(&args) {
         Ok(m) => m,
-        Err(e) => panic!("{}", e)
+        Err(e) => panic!("{}", e),
     };
     let h_arg = matches.opt_get::<i32>("help");
     assert_eq!(h_arg, Ok(None));
@@ -1101,14 +1173,15 @@ fn test_opt_get_default() {
     opts.optflagopt("p", "percent", "Description", "0.0 .. 10.0");
     opts.long_only(false);
 
-    let args: Vec<String> = [
-        "-i", "true", "-p", "1.1"
-    ].iter().map(|x| x.to_string()).collect();
+    let args: Vec<String> = ["-i", "true", "-p", "1.1"]
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
     let matches = &match opts.parse(&args) {
         Ok(m) => m,
-        Err(e) => panic!("{}", e)
+        Err(e) => panic!("{}", e),
     };
-    let h_arg =matches.opt_get_default("help", 10);
+    let h_arg = matches.opt_get_default("help", 10);
     assert_eq!(h_arg, Ok(10));
     let i_arg = matches.opt_get_default("i", false);
     assert_eq!(i_arg, Ok(true));
