@@ -1188,3 +1188,25 @@ fn test_opt_get_default() {
     let p_arg = matches.opt_get_default("p", 10.2);
     assert_eq!(p_arg, Ok(1.1));
 }
+
+#[test]
+fn test_opt_positions() {
+    let mut opts = Options::new();
+    opts.optflagmulti("a", "act", "Description");
+    opts.optflagmulti("r", "react", "Description");
+
+    let args: Vec<String> = ["-a", "-a", "-r", "-a", "-r", "-r"]
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
+
+    let matches = &match opts.parse(&args) {
+        Ok(m) => m,
+        Err(e) => panic!("{}", e),
+    };
+
+    let a_pos = matches.opt_positions("a");
+    assert_eq!(a_pos, vec![0, 1, 3]);
+    let b_pos = matches.opt_positions("r");
+    assert_eq!(b_pos, vec![2, 4, 5]);
+}

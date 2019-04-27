@@ -354,7 +354,7 @@ impl Options {
 
         let mut vals = (0..opts.len())
             .map(|_| Vec::new())
-            .collect::<Vec<Vec<Optval>>>();
+            .collect::<Vec<Vec<(usize, Optval)>>>();
         let mut free: Vec<String> = Vec::new();
         let args = args
             .into_iter()
@@ -365,6 +365,7 @@ impl Options {
                     .map(|s| s.to_owned())
             }).collect::<::std::result::Result<Vec<_>, _>>()?;
         let mut args = args.into_iter().peekable();
+        let mut arg_pos = 0;
         while let Some(cur) = args.next() {
             if !is_arg(&cur) {
                 free.push(cur);
@@ -440,7 +441,7 @@ impl Options {
                             if name_pos == names.len() && i_arg.is_some() {
                                 return Err(UnexpectedArgument(nm.to_string()));
                             }
-                            vals[optid].push(Given);
+                            vals[optid].push((arg_pos, Given));
                         }
                         Maybe => {
                             // Note that here we do not handle `--arg value`.
@@ -450,21 +451,21 @@ impl Options {
                             // option at the end of the arguments when
                             // FloatingFrees is in use.
                             if let Some(i_arg) = i_arg.take() {
-                                vals[optid].push(Val(i_arg));
+                                vals[optid].push((arg_pos, Val(i_arg)));
                             } else if was_long
                                 || name_pos < names.len()
                                 || args.peek().map_or(true, |n| is_arg(&n))
                             {
-                                vals[optid].push(Given);
+                                vals[optid].push((arg_pos, Given));
                             } else {
-                                vals[optid].push(Val(args.next().unwrap()));
+                                vals[optid].push((arg_pos, Val(args.next().unwrap())));
                             }
                         }
                         Yes => {
                             if let Some(i_arg) = i_arg.take() {
-                                vals[optid].push(Val(i_arg));
+                                vals[optid].push((arg_pos, Val(i_arg)));
                             } else if let Some(n) = args.next() {
-                                vals[optid].push(Val(n));
+                                vals[optid].push((arg_pos, Val(n)));
                             } else {
                                 return Err(ArgumentMissing(nm.to_string()));
                             }
@@ -472,6 +473,7 @@ impl Options {
                     }
                 }
             }
+            arg_pos += 1;
         }
         debug_assert_eq!(vals.len(), opts.len());
         for (vals, opt) in vals.iter().zip(opts.iter()) {
@@ -701,8 +703,8 @@ enum Optval {
 pub struct Matches {
     /// Options that matched
     opts: Vec<Opt>,
-    /// Values of the Options that matched
-    vals: Vec<Vec<Optval>>,
+    /// Values of the Options that matched and their positions
+    vals: Vec<Vec<(usize, Optval)>>,
     /// Free string fragments
     pub free: Vec<String>,
 }
@@ -799,7 +801,7 @@ impl OptGroup {
 }
 
 impl Matches {
-    fn opt_vals(&self, nm: &str) -> Vec<Optval> {
+    fn opt_vals(&self, nm: &str) -> Vec<(usize, Optval)> {
         match find_opt(&self.opts, &Name::from_str(nm)) {
             Some(id) => self.vals[id].clone(),
             None => panic!("No option '{}' defined", nm),
@@ -807,7 +809,7 @@ impl Matches {
     }
 
     fn opt_val(&self, nm: &str) -> Option<Optval> {
-        self.opt_vals(nm).into_iter().next()
+        self.opt_vals(nm).into_iter().map(|(_, o)| o).next()
     }
     /// Returns true if an option was defined
     pub fn opt_defined(&self, nm: &str) -> bool {
@@ -822,6 +824,11 @@ impl Matches {
     /// Returns the number of times an option was matched.
     pub fn opt_count(&self, nm: &str) -> usize {
         self.opt_vals(nm).len()
+    }
+
+    /// Returns a vector of all the positions in which an option was matched.
+    pub fn opt_positions(&self, nm: &str) -> Vec<usize> {
+        self.opt_vals(nm).into_iter().map(|(pos, _)| pos).collect()
     }
 
     /// Returns true if any of several options were matched.
@@ -851,7 +858,7 @@ impl Matches {
     pub fn opt_strs(&self, nm: &str) -> Vec<String> {
         self.opt_vals(nm)
             .into_iter()
-            .filter_map(|v| match v {
+            .filter_map(|(_, v)| match v {
                 Val(s) => Some(s),
                 _ => None,
             }).collect()
