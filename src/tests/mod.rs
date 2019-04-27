@@ -1193,6 +1193,7 @@ fn test_opt_get_default() {
 fn test_opt_positions() {
     let mut opts = Options::new();
     opts.optflagmulti("a", "act", "Description");
+    opts.optflagmulti("e", "enact", "Description");
     opts.optflagmulti("r", "react", "Description");
 
     let args: Vec<String> = ["-a", "-a", "-r", "-a", "-r", "-r"]
@@ -1207,6 +1208,8 @@ fn test_opt_positions() {
 
     let a_pos = matches.opt_positions("a");
     assert_eq!(a_pos, vec![0, 1, 3]);
-    let b_pos = matches.opt_positions("r");
-    assert_eq!(b_pos, vec![2, 4, 5]);
+    let e_pos = matches.opt_positions("e");
+    assert_eq!(e_pos, vec![]);
+    let r_pos = matches.opt_positions("r");
+    assert_eq!(r_pos, vec![2, 4, 5]);
 }
