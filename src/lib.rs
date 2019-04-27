@@ -864,6 +864,19 @@ impl Matches {
             }).collect()
     }
 
+    /// Returns a vector of the arguments provided to all matches of the given
+    /// option, together with their positions.
+    ///
+    /// Used when an option accepts multiple values.
+    pub fn opt_strs_pos(&self, nm: &str) -> Vec<(usize, String)> {
+        self.opt_vals(nm)
+            .into_iter()
+            .filter_map(|(p, v)| match v {
+                Val(s) => Some((p, s)),
+                _ => None,
+            }).collect()
+    }
+
     /// Returns the string argument supplied to a matching option or `None`.
     pub fn opt_str(&self, nm: &str) -> Option<String> {
         match self.opt_val(nm) {
