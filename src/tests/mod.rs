@@ -909,7 +909,7 @@ Options:
     -c, --brûlée        brûlée quite long description
     -k, --kiwi€         kiwi description
     -o, --orange‹       orange description
-    -r, --raspberry-but-making-this-option-way-too-long 
+    -r, --raspberry-but-making-this-option-way-too-long\u{0020}
                         raspberry description is also quite long indeed longer
                         than every other piece of text we might encounter here
                         and thus will be automatically broken up
@@ -1187,4 +1187,54 @@ fn test_opt_get_default() {
     assert_eq!(i_arg, Ok(true));
     let p_arg = matches.opt_get_default("p", 10.2);
     assert_eq!(p_arg, Ok(1.1));
+}
+
+#[test]
+fn test_opt_positions() {
+    let mut opts = Options::new();
+    opts.optflagmulti("a", "act", "Description");
+    opts.optflagmulti("e", "enact", "Description");
+    opts.optflagmulti("r", "react", "Description");
+
+    let args: Vec<String> = ["-a", "-a", "-r", "-a", "-r", "-r"]
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
+
+    let matches = &match opts.parse(&args) {
+        Ok(m) => m,
+        Err(e) => panic!("{}", e),
+    };
+
+    let a_pos = matches.opt_positions("a");
+    assert_eq!(a_pos, vec![0, 1, 3]);
+    let e_pos = matches.opt_positions("e");
+    assert_eq!(e_pos, vec![]);
+    let r_pos = matches.opt_positions("r");
+    assert_eq!(r_pos, vec![2, 4, 5]);
+}
+
+#[test]
+fn test_opt_strs_pos() {
+    let mut opts = Options::new();
+    opts.optmulti("a", "act", "Description", "NUM");
+    opts.optmulti("e", "enact", "Description", "NUM");
+    opts.optmulti("r", "react", "Description", "NUM");
+
+    let args: Vec<String> = ["-a1", "-a2", "-r3", "-a4", "-r5", "-r6"]
+        .iter()
+        .map(|x| x.to_string())
+        .collect();
+
+    let matches = &match opts.parse(&args) {
+        Ok(m) => m,
+        Err(e) => panic!("{}", e),
+    };
+
+    let a_pos = matches.opt_strs_pos("a");
+    assert_eq!(a_pos, vec![(0, "1".to_string()), (1, "2".to_string()), (3, "4".to_string())]);
+    let e_pos = matches.opt_strs_pos("e");
+    assert_eq!(e_pos, vec![]);
+    let r_pos = matches.opt_strs_pos("r");
+    assert_eq!(r_pos, vec![(2, "3".to_string()), (4, "5".to_string()), (5, "6".to_string())]);
 }
