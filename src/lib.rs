@@ -364,7 +364,7 @@ impl Options {
                     .ok_or_else(|| Fail::UnrecognizedOption(format!("{:?}", i.as_ref())))
                     .map(|s| s.to_owned())
             }).collect::<::std::result::Result<Vec<_>, _>>()?;
-        let mut args = args.into_iter().peekable();
+        let mut args = args.into_iter();
         let mut arg_pos = 0;
         while let Some(cur) = args.next() {
             if !is_arg(&cur) {
