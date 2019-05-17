@@ -364,7 +364,7 @@ impl Options {
                     .ok_or_else(|| Fail::UnrecognizedOption(format!("{:?}", i.as_ref())))
                     .map(|s| s.to_owned())
             }).collect::<::std::result::Result<Vec<_>, _>>()?;
-        let mut args = args.into_iter().peekable();
+        let mut args = args.into_iter();
         let mut arg_pos = 0;
         while let Some(cur) = args.next() {
             if !is_arg(&cur) {
@@ -382,7 +382,6 @@ impl Options {
             } else {
                 let mut names;
                 let mut i_arg = None;
-                let mut was_long = true;
                 if cur.as_bytes()[1] == b'-' || self.long_only {
                     let tail = if cur.as_bytes()[1] == b'-' {
                         &cur[2..]
@@ -396,7 +395,6 @@ impl Options {
                         i_arg = Some(rest.to_string());
                     }
                 } else {
-                    was_long = false;
                     names = Vec::new();
                     for (j, ch) in cur.char_indices().skip(1) {
                         let opt = Short(ch);
@@ -444,21 +442,16 @@ impl Options {
                             vals[optid].push((arg_pos, Given));
                         }
                         Maybe => {
-                            // Note that here we do not handle `--arg value`.
-                            // This matches GNU getopt behavior; but also
-                            // makes sense, because if this were accepted,
-                            // then users could only write a "Maybe" long
-                            // option at the end of the arguments when
-                            // FloatingFrees is in use.
+                            // Note that here we do not handle `--arg value` or
+                            // `-a value`. This matches GNU getopt behavior; but
+                            // also makes sense, because if this were accepted,
+                            // then users could only write a "Maybe" option at
+                            // the end of the arguments when FloatingFrees is in
+                            // use.
                             if let Some(i_arg) = i_arg.take() {
                                 vals[optid].push((arg_pos, Val(i_arg)));
-                            } else if was_long
-                                || name_pos < names.len()
-                                || args.peek().map_or(true, |n| is_arg(&n))
-                            {
-                                vals[optid].push((arg_pos, Given));
                             } else {
-                                vals[optid].push((arg_pos, Val(args.next().unwrap())));
+                                vals[optid].push((arg_pos, Given));
                             }
                         }
                         Yes => {

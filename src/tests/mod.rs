@@ -379,8 +379,8 @@ fn test_optflagopt() {
     let short_args = vec!["-t".to_string(), "x".to_string()];
     match opts.parse(&short_args) {
         Ok(ref m) => {
-            assert_eq!(m.opt_str("t").unwrap(), "x");
-            assert_eq!(m.opt_str("test").unwrap(), "x");
+            assert_eq!(m.opt_str("t"), None);
+            assert_eq!(m.opt_str("test"), None);
         }
         _ => panic!(),
     }
@@ -1148,7 +1148,7 @@ fn test_opt_get() {
     opts.optflagopt("p", "percent", "Description", "0.0 .. 10.0");
     opts.long_only(false);
 
-    let args: Vec<String> = ["-i", "true", "-p", "1.1"]
+    let args: Vec<String> = ["--ignore=true", "-p1.1"]
         .iter()
         .map(|x| x.to_string())
         .collect();
@@ -1173,7 +1173,7 @@ fn test_opt_get_default() {
     opts.optflagopt("p", "percent", "Description", "0.0 .. 10.0");
     opts.long_only(false);
 
-    let args: Vec<String> = ["-i", "true", "-p", "1.1"]
+    let args: Vec<String> = ["--ignore=true", "-p1.1"]
         .iter()
         .map(|x| x.to_string())
         .collect();
