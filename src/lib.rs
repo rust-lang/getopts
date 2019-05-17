@@ -380,7 +380,7 @@ impl Options {
                 free.extend(args);
                 break;
             } else {
-                let mut names;
+                let mut name = None;
                 let mut i_arg = None;
                 if cur.as_bytes()[1] == b'-' || self.long_only {
                     let tail = if cur.as_bytes()[1] == b'-' {
@@ -390,56 +390,52 @@ impl Options {
                         &cur[1..]
                     };
                     let mut parts = tail.splitn(2, '=');
-                    names = vec![Name::from_str(parts.next().unwrap())];
+                    name = Some(Name::from_str(parts.next().unwrap()));
                     if let Some(rest) = parts.next() {
                         i_arg = Some(rest.to_string());
                     }
                 } else {
-                    names = Vec::new();
                     for (j, ch) in cur.char_indices().skip(1) {
                         let opt = Short(ch);
-
-                        /* In a series of potential options (eg. -aheJ), if we
-                           see one which takes an argument, we assume all
-                           subsequent characters make up the argument. This
-                           allows options such as -L/usr/local/lib/foo to be
-                           interpreted correctly
-                        */
 
                         let opt_id = match find_opt(&opts, &opt) {
                             Some(id) => id,
                             None => return Err(UnrecognizedOption(opt.to_string())),
                         };
 
-                        names.push(opt);
-
+                        // In a series of potential options (eg. -aheJ), if we
+                        // see one which takes an argument, we assume all
+                        // subsequent characters make up the argument. This
+                        // allows options such as -L/usr/local/lib/foo to be
+                        // interpreted correctly
                         let arg_follows = match opts[opt_id].hasarg {
                             Yes | Maybe => true,
                             No => false,
                         };
 
                         if arg_follows {
+                            name = Some(opt);
                             let next = j + ch.len_utf8();
                             if next < cur.len() {
                                 i_arg = Some(cur[next..].to_string());
                                 break;
                             }
+                        } else {
+                            vals[opt_id].push((arg_pos, Given));
                         }
                     }
                 }
-                let mut name_pos = 0;
-                for nm in names.iter() {
-                    name_pos += 1;
-                    let optid = match find_opt(&opts, &nm) {
+                if let Some(nm) = name {
+                    let opt_id = match find_opt(&opts, &nm) {
                         Some(id) => id,
                         None => return Err(UnrecognizedOption(nm.to_string())),
                     };
-                    match opts[optid].hasarg {
+                    match opts[opt_id].hasarg {
                         No => {
-                            if name_pos == names.len() && i_arg.is_some() {
+                            if i_arg.is_some() {
                                 return Err(UnexpectedArgument(nm.to_string()));
                             }
-                            vals[optid].push((arg_pos, Given));
+                            vals[opt_id].push((arg_pos, Given));
                         }
                         Maybe => {
                             // Note that here we do not handle `--arg value` or
@@ -449,16 +445,16 @@ impl Options {
                             // the end of the arguments when FloatingFrees is in
                             // use.
                             if let Some(i_arg) = i_arg.take() {
-                                vals[optid].push((arg_pos, Val(i_arg)));
+                                vals[opt_id].push((arg_pos, Val(i_arg)));
                             } else {
-                                vals[optid].push((arg_pos, Given));
+                                vals[opt_id].push((arg_pos, Given));
                             }
                         }
                         Yes => {
                             if let Some(i_arg) = i_arg.take() {
-                                vals[optid].push((arg_pos, Val(i_arg)));
+                                vals[opt_id].push((arg_pos, Val(i_arg)));
                             } else if let Some(n) = args.next() {
-                                vals[optid].push((arg_pos, Val(n)));
+                                vals[opt_id].push((arg_pos, Val(n)));
                             } else {
                                 return Err(ArgumentMissing(nm.to_string()));
                             }
