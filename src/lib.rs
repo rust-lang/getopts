@@ -551,10 +551,6 @@ impl Options {
                     row.push_str(&short_name);
                     if long_name.width() > 0 {
                         row.push_str(", ");
-                    } else {
-                        // Only a single space here, so that any
-                        // argument is printed in the correct spot.
-                        row.push(' ');
                     }
                 }
                 // FIXME: refer issue #7.
@@ -567,16 +563,21 @@ impl Options {
                 _ => {
                     row.push_str(if self.long_only { "-" } else { "--" });
                     row.push_str(&long_name);
-                    row.push(' ');
                 }
             }
 
             // arg
             match hasarg {
                 No => {}
-                Yes => row.push_str(&hint),
+                Yes => {
+                    row.push(' ');
+                    row.push_str(&hint);
+                }
                 Maybe => {
                     row.push('[');
+                    if !long_name.is_empty() {
+                        row.push('=');
+                    }
                     row.push_str(&hint);
                     row.push(']');
                 }
@@ -979,9 +980,13 @@ fn format_option(opt: &OptGroup) -> String {
     }
 
     if opt.hasarg != No {
-        line.push(' ');
         if opt.hasarg == Maybe {
             line.push('[');
+            if opt.short_name.is_empty() {
+                line.push('=');
+            }
+        } else {
+            line.push(' ');
         }
         line.push_str(&opt.hint);
         if opt.hasarg == Maybe {
