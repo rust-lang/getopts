@@ -16,9 +16,10 @@ categories = ["command-line-interface"]
 [dependencies]
 unicode-width = "0.1.5"
 std = { version = "1.0", package = "rustc-std-workspace-std", optional = true }
+core = { version = "1.0", package = "rustc-std-workspace-core", optional = true }
 
 [dev-dependencies]
 log = "0.4"
 
 [features]
-rustc-dep-of-std = ['unicode-width/rustc-dep-of-std', 'std']
+rustc-dep-of-std = ['unicode-width/rustc-dep-of-std', 'std', 'core']
