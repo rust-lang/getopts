@@ -379,8 +379,8 @@ fn test_optflagopt() {
     let short_args = vec!["-t".to_string(), "x".to_string()];
     match opts.parse(&short_args) {
         Ok(ref m) => {
-            assert_eq!(m.opt_str("t"), None);
-            assert_eq!(m.opt_str("test"), None);
+            assert_eq!(m.opt_str("t").unwrap(), "x");
+            assert_eq!(m.opt_str("test").unwrap(), "x");
         }
         _ => panic!(),
     }
@@ -763,8 +763,6 @@ fn test_usage() {
     opts.optopt("a", "012345678901234567890123456789", "Desc", "VAL");
     opts.optflag("k", "kiwi", "Desc");
     opts.optflagopt("p", "", "Desc", "VAL");
-    opts.optflagopt("", "pea", "Desc", "VAL");
-    opts.optflagopt("c", "cherry", "Desc", "VAL");
     opts.optmulti("l", "", "Desc", "VAL");
     opts.optflag("", "starfruit", "Starfruit");
 
@@ -775,9 +773,7 @@ Options:
     -a, --012345678901234567890123456789 VAL
                         Desc
     -k, --kiwi          Desc
-    -p[VAL]             Desc
-        --pea[=VAL]     Desc
-    -c, --cherry[=VAL]  Desc
+    -p [VAL]            Desc
     -l VAL              Desc
         --starfruit     Starfruit
 ";
@@ -824,7 +820,7 @@ Options:
 
     debug!("expected: <<{}>>", expected);
     debug!("generated: <<{}>>", usage);
-    assert_eq!(usage, expected)
+    assert!(usage == expected)
 }
 
 #[test]
@@ -855,7 +851,7 @@ Options:
 
     debug!("expected: <<{}>>", expected);
     debug!("generated: <<{}>>", usage);
-    assert_eq!(usage, expected)
+    assert!(usage == expected)
 }
 
 #[test]
@@ -886,7 +882,7 @@ Options:
 
     debug!("expected: <<{}>>", expected);
     debug!("generated: <<{}>>", usage);
-    assert_eq!(usage, expected)
+    assert!(usage == expected)
 }
 
 #[test]
@@ -913,7 +909,7 @@ Options:
     -c, --brûlée        brûlée quite long description
     -k, --kiwi€         kiwi description
     -o, --orange‹       orange description
-    -r, --raspberry-but-making-this-option-way-too-long
+    -r, --raspberry-but-making-this-option-way-too-long\u{0020}
                         raspberry description is also quite long indeed longer
                         than every other piece of text we might encounter here
                         and thus will be automatically broken up
@@ -923,7 +919,7 @@ Options:
 
     debug!("expected: <<{}>>", expected);
     debug!("generated: <<{}>>", usage);
-    assert_eq!(usage, expected)
+    assert!(usage == expected)
 }
 
 #[test]
@@ -938,13 +934,13 @@ fn test_usage_short_only() {
 Options:
     -k VAL              Kiwi
     -s                  Starfruit
-    -a[TYPE]            Apple
+    -a [TYPE]           Apple
 ";
 
     let usage = opts.usage("Usage: fruits");
     debug!("expected: <<{}>>", expected);
     debug!("generated: <<{}>>", usage);
-    assert_eq!(usage, expected)
+    assert!(usage == expected)
 }
 
 #[test]
@@ -959,13 +955,13 @@ fn test_usage_long_only() {
 Options:
     --kiwi VAL          Kiwi
     --starfruit         Starfruit
-    --apple[=TYPE]      Apple
+    --apple [TYPE]      Apple
 ";
 
     let usage = opts.usage("Usage: fruits");
     debug!("expected: <<{}>>", expected);
     debug!("generated: <<{}>>", usage);
-    assert_eq!(usage, expected)
+    assert!(usage == expected)
 }
 
 #[test]
@@ -975,10 +971,9 @@ fn test_short_usage() {
     opts.optopt("a", "012345678901234567890123456789", "Desc", "VAL");
     opts.optflag("k", "kiwi", "Desc");
     opts.optflagopt("p", "", "Desc", "VAL");
-    opts.optflagopt("", "pea", "Desc", "VAL");
-    opts.optflagopt("c", "cherry", "Desc", "VAL");
+    opts.optmulti("l", "", "Desc", "VAL");
 
-    let expected = "Usage: fruits -b VAL [-a VAL] [-k] [-p[VAL]] [--pea[=VAL]] [-c[VAL]]".to_string();
+    let expected = "Usage: fruits -b VAL [-a VAL] [-k] [-p [VAL]] [-l VAL]..".to_string();
     let generated_usage = opts.short_usage("fruits");
 
     debug!("expected: <<{}>>", expected);
@@ -1031,7 +1026,7 @@ Options:
 
     debug!("expected: <<{}>>", expected);
     debug!("generated: <<{}>>", usage);
-    assert_eq!(usage, expected)
+    assert!(usage == expected)
 }
 
 #[test]
@@ -1153,7 +1148,7 @@ fn test_opt_get() {
     opts.optflagopt("p", "percent", "Description", "0.0 .. 10.0");
     opts.long_only(false);
 
-    let args: Vec<String> = ["--ignore=true", "-p1.1"]
+    let args: Vec<String> = ["-i", "true", "-p", "1.1"]
         .iter()
         .map(|x| x.to_string())
         .collect();
@@ -1178,7 +1173,7 @@ fn test_opt_get_default() {
     opts.optflagopt("p", "percent", "Description", "0.0 .. 10.0");
     opts.long_only(false);
 
-    let args: Vec<String> = ["--ignore=true", "-p1.1"]
+    let args: Vec<String> = ["-i", "true", "-p", "1.1"]
         .iter()
         .map(|x| x.to_string())
         .collect();
