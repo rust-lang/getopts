@@ -13,7 +13,3 @@ Add this to your `Cargo.toml`:
 [dependencies]
 getopts = "0.2"
 ```
-
-## Rust Version Support
-
-The minimum supported Rust version is 1.18.
