@@ -354,7 +354,8 @@ impl Options {
                     .to_str()
                     .ok_or_else(|| Fail::UnrecognizedOption(format!("{:?}", i.as_ref())))
                     .map(|s| s.to_owned())
-            }).collect::<::std::result::Result<Vec<_>, _>>()?;
+            })
+            .collect::<::std::result::Result<Vec<_>, _>>()?;
         let mut args = args.into_iter().peekable();
         let mut arg_pos = 0;
         while let Some(cur) = args.next() {
@@ -839,7 +840,8 @@ impl Matches {
             .filter_map(|nm| match self.opt_val(&nm) {
                 Some(Val(s)) => Some(s),
                 _ => None,
-            }).next()
+            })
+            .next()
     }
 
     /// Returns a vector of the arguments provided to all matches of the given
@@ -852,7 +854,8 @@ impl Matches {
             .filter_map(|(_, v)| match v {
                 Val(s) => Some(s),
                 _ => None,
-            }).collect()
+            })
+            .collect()
     }
 
     /// Returns a vector of the arguments provided to all matches of the given
@@ -865,7 +868,8 @@ impl Matches {
             .filter_map(|(p, v)| match v {
                 Val(s) => Some((p, s)),
                 _ => None,
-            }).collect()
+            })
+            .collect()
     }
 
     /// Returns the string argument supplied to a matching option or `None`.
@@ -1013,7 +1017,8 @@ fn each_split_within(desc: &str, lim: usize) -> Vec<String> {
                 else {
                     (words, a, idx)
                 }
-            }).0;
+            })
+            .0;
 
         let mut row = String::new();
         for word in words.iter() {

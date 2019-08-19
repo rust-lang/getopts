@@ -1232,9 +1232,23 @@ fn test_opt_strs_pos() {
     };
 
     let a_pos = matches.opt_strs_pos("a");
-    assert_eq!(a_pos, vec![(0, "1".to_string()), (1, "2".to_string()), (3, "4".to_string())]);
+    assert_eq!(
+        a_pos,
+        vec![
+            (0, "1".to_string()),
+            (1, "2".to_string()),
+            (3, "4".to_string())
+        ]
+    );
     let e_pos = matches.opt_strs_pos("e");
     assert_eq!(e_pos, vec![]);
     let r_pos = matches.opt_strs_pos("r");
-    assert_eq!(r_pos, vec![(2, "3".to_string()), (4, "5".to_string()), (5, "6".to_string())]);
+    assert_eq!(
+        r_pos,
+        vec![
+            (2, "3".to_string()),
+            (4, "5".to_string()),
+            (5, "6".to_string())
+        ]
+    );
 }
