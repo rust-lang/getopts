@@ -626,6 +626,7 @@ fn test_multi() {
     opts.optopt("e", "", "encrypt", "ENCRYPT");
     opts.optopt("", "encrypt", "encrypt", "ENCRYPT");
     opts.optopt("f", "", "flag", "FLAG");
+    let no_opts: &[&str] = &[];
 
     let args_single = vec!["-e".to_string(), "foo".to_string()];
     let matches_single = &match opts.parse(&args_single) {
@@ -638,6 +639,12 @@ fn test_multi() {
     assert!(!matches_single.opts_present(&["encrypt".to_string()]));
     assert!(!matches_single.opts_present(&["thing".to_string()]));
     assert!(!matches_single.opts_present(&[]));
+
+    assert!(matches_single.opts_present_any(&["e"]));
+    assert!(matches_single.opts_present_any(&["encrypt", "e"]));
+    assert!(matches_single.opts_present_any(&["e", "encrypt"]));
+    assert!(!matches_single.opts_present_any(&["encrypt"]));
+    assert!(!matches_single.opts_present_any(no_opts));
 
     assert_eq!(matches_single.opts_str(&["e".to_string()]).unwrap(), "foo");
     assert_eq!(
@@ -652,6 +659,18 @@ fn test_multi() {
             .unwrap(),
         "foo"
     );
+
+    assert_eq!(matches_single.opts_str_first(&["e"]).unwrap(), "foo");
+    assert_eq!(
+        matches_single.opts_str_first(&["e", "encrypt"]).unwrap(),
+        "foo"
+    );
+    assert_eq!(
+        matches_single.opts_str_first(&["encrypt", "e"]).unwrap(),
+        "foo"
+    );
+    assert_eq!(matches_single.opts_str_first(&["encrypt"]), None);
+    assert_eq!(matches_single.opts_str_first(no_opts), None);
 
     let args_both = vec![
         "-e".to_string(),
@@ -671,6 +690,13 @@ fn test_multi() {
     assert!(!matches_both.opts_present(&["thing".to_string()]));
     assert!(!matches_both.opts_present(&[]));
 
+    assert!(matches_both.opts_present_any(&["e"]));
+    assert!(matches_both.opts_present_any(&["encrypt"]));
+    assert!(matches_both.opts_present_any(&["encrypt", "e"]));
+    assert!(matches_both.opts_present_any(&["e", "encrypt"]));
+    assert!(!matches_both.opts_present_any(&["f"]));
+    assert!(!matches_both.opts_present_any(no_opts));
+
     assert_eq!(matches_both.opts_str(&["e".to_string()]).unwrap(), "foo");
     assert_eq!(
         matches_both.opts_str(&["encrypt".to_string()]).unwrap(),
@@ -688,6 +714,22 @@ fn test_multi() {
             .unwrap(),
         "foo"
     );
+
+    assert_eq!(matches_both.opts_str_first(&["e"]).unwrap(), "foo");
+    assert_eq!(
+        matches_both.opts_str_first(&["encrypt"]).unwrap(),
+        "foo"
+    );
+    assert_eq!(
+        matches_both.opts_str_first(&["e", "encrypt"]).unwrap(),
+        "foo"
+    );
+    assert_eq!(
+        matches_both.opts_str_first(&["encrypt", "e"]).unwrap(),
+        "foo"
+    );
+    assert_eq!(matches_both.opts_str_first(&["f"]), None);
+    assert_eq!(matches_both.opts_str_first(no_opts), None);
 }
 
 #[test]

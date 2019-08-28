@@ -828,11 +828,86 @@ impl Matches {
             })
     }
 
+    /// Returns true if any of several options were matched.
+    ///
+    /// Similar to `opts_present` but accepts any argument that can be converted
+    /// into an iterator over string references.
+    ///
+    /// # Panics
+    ///
+    /// This function might panic if some option name is not defined.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// let mut opts = Options::new();
+    /// opts.optopt("a", "alpha", "first option", "STR");
+    /// opts.optopt("b", "beta", "second option", "STR");
+    ///
+    /// let args = vec!["-a", "foo"];
+    /// let matches = &match opts.parse(&args) {
+    ///     Ok(m) => m,
+    ///     _ => panic!(),
+    /// };
+    ///
+    /// assert!(matches.opts_present_any(&["alpha"]));
+    /// assert!(!matches.opts_present_any(&["beta"]));
+    /// ```
+    pub fn opts_present_any<C: IntoIterator>(&self, names: C) -> bool
+    where
+        C::Item: AsRef<str>,
+    {
+        names
+            .into_iter()
+            .any(|nm| !self.opt_vals(nm.as_ref()).is_empty())
+    }
+
     /// Returns the string argument supplied to one of several matching options or `None`.
     pub fn opts_str(&self, names: &[String]) -> Option<String> {
         names
             .iter()
             .filter_map(|nm| match self.opt_val(&nm) {
+                Some(Val(s)) => Some(s),
+                _ => None,
+            })
+            .next()
+    }
+
+    /// Returns the string argument supplied to the first matching option of
+    /// several options or `None`.
+    ///
+    /// Similar to `opts_str` but accepts any argument that can be converted
+    /// into an iterator over string references.
+    ///
+    /// # Panics
+    ///
+    /// This function might panic if some option name is not defined.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// let mut opts = Options::new();
+    /// opts.optopt("a", "alpha", "first option", "STR");
+    /// opts.optopt("b", "beta", "second option", "STR");
+    ///
+    /// let args = vec!["-a", "foo", "--beta", "bar"];
+    /// let matches = &match opts.parse(&args) {
+    ///     Ok(m) => m,
+    ///     _ => panic!(),
+    /// };
+    ///
+    /// assert_eq!(Some("foo".to_string()), matches.opts_str_first(&["alpha", "beta"]));
+    /// assert_eq!(Some("bar".to_string()), matches.opts_str_first(&["beta", "alpha"]));
+    /// ```
+    pub fn opts_str_first<C: IntoIterator>(&self, names: C) -> Option<String>
+    where
+        C::Item: AsRef<str>,
+    {
+        names
+            .into_iter()
+            .filter_map(|nm| match self.opt_val(nm.as_ref()) {
                 Some(Val(s)) => Some(s),
                 _ => None,
             })
