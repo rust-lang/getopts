@@ -799,23 +799,35 @@ impl Matches {
         self.opt_vals(nm).into_iter().map(|(_, o)| o).next()
     }
     /// Returns true if an option was defined
-    pub fn opt_defined(&self, nm: &str) -> bool {
-        find_opt(&self.opts, &Name::from_str(nm)).is_some()
+    pub fn opt_defined(&self, name: &str) -> bool {
+        find_opt(&self.opts, &Name::from_str(name)).is_some()
     }
 
     /// Returns true if an option was matched.
-    pub fn opt_present(&self, nm: &str) -> bool {
-        !self.opt_vals(nm).is_empty()
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the option name is not defined.
+    pub fn opt_present(&self, name: &str) -> bool {
+        !self.opt_vals(name).is_empty()
     }
 
     /// Returns the number of times an option was matched.
-    pub fn opt_count(&self, nm: &str) -> usize {
-        self.opt_vals(nm).len()
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the option name is not defined.
+    pub fn opt_count(&self, name: &str) -> usize {
+        self.opt_vals(name).len()
     }
 
     /// Returns a vector of all the positions in which an option was matched.
-    pub fn opt_positions(&self, nm: &str) -> Vec<usize> {
-        self.opt_vals(nm).into_iter().map(|(pos, _)| pos).collect()
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the option name is not defined.
+    pub fn opt_positions(&self, name: &str) -> Vec<usize> {
+        self.opt_vals(name).into_iter().map(|(pos, _)| pos).collect()
     }
 
     /// Returns true if any of several options were matched.
@@ -918,8 +930,12 @@ impl Matches {
     /// option.
     ///
     /// Used when an option accepts multiple values.
-    pub fn opt_strs(&self, nm: &str) -> Vec<String> {
-        self.opt_vals(nm)
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the option name is not defined.
+    pub fn opt_strs(&self, name: &str) -> Vec<String> {
+        self.opt_vals(name)
             .into_iter()
             .filter_map(|(_, v)| match v {
                 Val(s) => Some(s),
@@ -932,8 +948,12 @@ impl Matches {
     /// option, together with their positions.
     ///
     /// Used when an option accepts multiple values.
-    pub fn opt_strs_pos(&self, nm: &str) -> Vec<(usize, String)> {
-        self.opt_vals(nm)
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the option name is not defined.
+    pub fn opt_strs_pos(&self, name: &str) -> Vec<(usize, String)> {
+        self.opt_vals(name)
             .into_iter()
             .filter_map(|(p, v)| match v {
                 Val(s) => Some((p, s)),
@@ -943,8 +963,12 @@ impl Matches {
     }
 
     /// Returns the string argument supplied to a matching option or `None`.
-    pub fn opt_str(&self, nm: &str) -> Option<String> {
-        match self.opt_val(nm) {
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the option name is not defined.
+    pub fn opt_str(&self, name: &str) -> Option<String> {
+        match self.opt_val(name) {
             Some(Val(s)) => Some(s),
             _ => None,
         }
@@ -955,8 +979,12 @@ impl Matches {
     /// Returns `None` if the option was not present, `def` if the option was
     /// present but no argument was provided, and the argument if the option was
     /// present and an argument was provided.
-    pub fn opt_default(&self, nm: &str, def: &str) -> Option<String> {
-        match self.opt_val(nm) {
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the option name is not defined.
+    pub fn opt_default(&self, name: &str, def: &str) -> Option<String> {
+        match self.opt_val(name) {
             Some(Val(s)) => Some(s),
             Some(_) => Some(def.to_string()),
             None => None,
@@ -966,11 +994,15 @@ impl Matches {
     /// Returns some matching value or `None`.
     ///
     /// Similar to opt_str, also converts matching argument using FromStr.
-    pub fn opt_get<T>(&self, nm: &str) -> result::Result<Option<T>, T::Err>
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the option name is not defined.
+    pub fn opt_get<T>(&self, name: &str) -> result::Result<Option<T>, T::Err>
     where
         T: FromStr,
     {
-        match self.opt_val(nm) {
+        match self.opt_val(name) {
             Some(Val(s)) => Ok(Some(s.parse()?)),
             Some(Given) => Ok(None),
             None => Ok(None),
@@ -982,11 +1014,15 @@ impl Matches {
     /// Similar to opt_default, except the two differences.
     /// Instead of returning None when argument was not present, return `def`.
     /// Instead of returning &str return type T, parsed using str::parse().
-    pub fn opt_get_default<T>(&self, nm: &str, def: T) -> result::Result<T, T::Err>
+    ///
+    /// # Panics
+    ///
+    /// This function will panic if the option name is not defined.
+    pub fn opt_get_default<T>(&self, name: &str, def: T) -> result::Result<T, T::Err>
     where
         T: FromStr,
     {
-        match self.opt_val(nm) {
+        match self.opt_val(name) {
             Some(Val(s)) => s.parse(),
             Some(Given) => Ok(def),
             None => Ok(def),
