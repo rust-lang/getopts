@@ -676,7 +676,7 @@ fn test_multi() {
         "-e".to_string(),
         "foo".to_string(),
         "--encrypt".to_string(),
-        "foo".to_string(),
+        "bar".to_string(),
     ];
     let matches_both = &match opts.parse(&args_both) {
         Ok(m) => m,
@@ -700,7 +700,7 @@ fn test_multi() {
     assert_eq!(matches_both.opts_str(&["e".to_string()]).unwrap(), "foo");
     assert_eq!(
         matches_both.opts_str(&["encrypt".to_string()]).unwrap(),
-        "foo"
+        "bar"
     );
     assert_eq!(
         matches_both
@@ -712,13 +712,13 @@ fn test_multi() {
         matches_both
             .opts_str(&["encrypt".to_string(), "e".to_string()])
             .unwrap(),
-        "foo"
+        "bar"
     );
 
     assert_eq!(matches_both.opts_str_first(&["e"]).unwrap(), "foo");
     assert_eq!(
         matches_both.opts_str_first(&["encrypt"]).unwrap(),
-        "foo"
+        "bar"
     );
     assert_eq!(
         matches_both.opts_str_first(&["e", "encrypt"]).unwrap(),
@@ -726,7 +726,7 @@ fn test_multi() {
     );
     assert_eq!(
         matches_both.opts_str_first(&["encrypt", "e"]).unwrap(),
-        "foo"
+        "bar"
     );
     assert_eq!(matches_both.opts_str_first(&["f"]), None);
     assert_eq!(matches_both.opts_str_first(no_opts), None);
