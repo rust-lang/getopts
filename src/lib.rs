@@ -124,6 +124,7 @@ use unicode_width::UnicodeWidthStr;
 mod tests;
 
 /// A description of the options that a program can handle.
+#[derive(PartialEq, Debug, Clone)]
 pub struct Options {
     grps: Vec<OptGroup>,
     parsing_style: ParsingStyle,
@@ -604,7 +605,7 @@ fn validate_names(short_name: &str, long_name: &str) {
 }
 
 /// What parsing style to use when parsing arguments.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ParsingStyle {
     /// Flags and "free" arguments can be freely inter-mixed.
     FloatingFrees,
@@ -661,7 +662,7 @@ struct Opt {
 
 /// One group of options, e.g., both `-h` and `--help`, along with
 /// their shared description and properties.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct OptGroup {
     /// Short name of the option, e.g. `h` for a `-h` option
     short_name: String,
