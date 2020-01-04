@@ -713,17 +713,7 @@ pub enum Fail {
     UnexpectedArgument(String),
 }
 
-impl Error for Fail {
-    fn description(&self) -> &str {
-        match *self {
-            ArgumentMissing(_) => "missing argument",
-            UnrecognizedOption(_) => "unrecognized option",
-            OptionMissing(_) => "missing option",
-            OptionDuplicated(_) => "duplicated option",
-            UnexpectedArgument(_) => "unexpected argument",
-        }
-    }
-}
+impl Error for Fail {}
 
 /// The result of parsing a command line with a set of options.
 pub type Result = result::Result<Matches, Fail>;
