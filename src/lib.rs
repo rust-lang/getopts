@@ -347,6 +347,8 @@ impl Options {
             .map(|_| Vec::new())
             .collect::<Vec<Vec<(usize, Optval)>>>();
         let mut free: Vec<String> = Vec::new();
+        let mut args_end = None;
+
         let args = args
             .into_iter()
             .map(|i| {
@@ -369,6 +371,7 @@ impl Options {
                     }
                 }
             } else if cur == "--" {
+                args_end = Some(free.len());
                 free.extend(args);
                 break;
             } else {
@@ -471,7 +474,12 @@ impl Options {
                 return Err(OptionDuplicated(opt.name.to_string()));
             }
         }
-        Ok(Matches { opts, vals, free })
+
+        // Note that if "--" is last argument on command line, then index stored
+        // in option does not exist in `free` and must be replaced with `None`
+        args_end = args_end.filter(|pos| pos != &free.len());
+
+        Ok(Matches { opts, vals, free, args_end })
     }
 
     /// Derive a short one-line usage summary from a set of long options.
@@ -692,8 +700,12 @@ pub struct Matches {
     opts: Vec<Opt>,
     /// Values of the Options that matched and their positions
     vals: Vec<Vec<(usize, Optval)>>,
+
     /// Free string fragments
     pub free: Vec<String>,
+
+    /// Index of first free fragment after "--" separator
+    args_end: Option<usize>,
 }
 
 /// The type returned when the command line does not conform to the
@@ -1017,6 +1029,43 @@ impl Matches {
             Some(Given) => Ok(def),
             None => Ok(def),
         }
+    }
+
+    /// Returns index of first free argument after "--".
+    ///
+    /// If double-dash separator is present and there are some args after it in
+    /// the argument list then the method returns index into `free` vector
+    /// indicating first argument after it.
+    /// behind it.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// let mut opts = Options::new();
+    ///
+    /// let matches = opts.parse(&vec!["arg1", "--", "arg2"]).unwrap();
+    /// let end_pos = matches.free_trailing_start().unwrap();
+    /// assert_eq!(end_pos, 1);
+    /// assert_eq!(matches.free[end_pos], "arg2".to_owned());
+    /// ```
+    ///
+    /// If the double-dash is missing from argument list or if there are no
+    /// arguments after it:
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// let mut opts = Options::new();
+    ///
+    /// let matches = opts.parse(&vec!["arg1", "--"]).unwrap();
+    /// assert_eq!(matches.free_trailing_start(), None);
+    ///
+    /// let matches = opts.parse(&vec!["arg1", "arg2"]).unwrap();
+    /// assert_eq!(matches.free_trailing_start(), None);
+    /// ```
+    ///
+    pub fn free_trailing_start(&self) -> Option<usize> {
+        self.args_end
     }
 }
 
