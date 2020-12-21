@@ -124,7 +124,7 @@ use unicode_width::UnicodeWidthStr;
 mod tests;
 
 /// A description of the options that a program can handle.
-#[derive(PartialEq, Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
     grps: Vec<OptGroup>,
     parsing_style: ParsingStyle,
