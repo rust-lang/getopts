@@ -194,6 +194,17 @@ impl Options {
     /// * `short_name` - e.g. `"h"` for a `-h` option, or `""` for none
     /// * `long_name` - e.g. `"help"` for a `--help` option, or `""` for none
     /// * `desc` - Description for usage help
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// let mut opts = Options::new();
+    /// opts.optflag("h", "help", "help flag");
+    ///
+    /// let matches = opts.parse(&["-h"]).unwrap();
+    /// assert!(matches.opt_present("h"));
+    /// ```
     pub fn optflag(&mut self, short_name: &str, long_name: &str, desc: &str) -> &mut Options {
         validate_names(short_name, long_name);
         self.grps.push(OptGroup {
@@ -213,6 +224,17 @@ impl Options {
     /// * `short_name` - e.g. `"h"` for a `-h` option, or `""` for none
     /// * `long_name` - e.g. `"help"` for a `--help` option, or `""` for none
     /// * `desc` - Description for usage help
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// let mut opts = Options::new();
+    /// opts.optflagmulti("v", "verbose", "verbosity flag");
+    ///
+    /// let matches = opts.parse(&["-v", "--verbose"]).unwrap();
+    /// assert_eq!(2, matches.opt_count("v"));
+    /// ```
     pub fn optflagmulti(&mut self, short_name: &str, long_name: &str, desc: &str) -> &mut Options {
         validate_names(short_name, long_name);
         self.grps.push(OptGroup {
@@ -233,6 +255,20 @@ impl Options {
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// let mut opts = Options::new();
+    /// opts.optflagopt("t", "text", "flag with optional argument", "TEXT");
+    ///
+    /// let matches = opts.parse(&["--text"]).unwrap();
+    /// assert_eq!(None, matches.opt_str("text"));
+    ///
+    /// let matches = opts.parse(&["--text=foo"]).unwrap();
+    /// assert_eq!(Some("foo".to_owned()), matches.opt_str("text"));
+    /// ```
     pub fn optflagopt(
         &mut self,
         short_name: &str,
@@ -260,6 +296,21 @@ impl Options {
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// let mut opts = Options::new();
+    /// opts.optmulti("t", "text", "text option", "TEXT");
+    ///
+    /// let matches = opts.parse(&["-t", "foo", "--text=bar"]).unwrap();
+    ///
+    /// let values = matches.opt_strs("t");
+    /// assert_eq!(2, values.len());
+    /// assert_eq!("foo", values[0]);
+    /// assert_eq!("bar", values[1]);
+    /// ```
     pub fn optmulti(
         &mut self,
         short_name: &str,
@@ -286,6 +337,21 @@ impl Options {
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// # use getopts::Fail;
+    /// let mut opts = Options::new();
+    /// opts.optopt("o", "optional", "optional text option", "TEXT");
+    ///
+    /// let matches = opts.parse(&["arg1"]).unwrap();
+    /// assert_eq!(None, matches.opt_str("optional"));
+    ///
+    /// let matches = opts.parse(&["--optional", "foo", "arg1"]).unwrap();
+    /// assert_eq!(Some("foo".to_owned()), matches.opt_str("optional"));
+    /// ```
     pub fn optopt(
         &mut self,
         short_name: &str,
@@ -312,6 +378,23 @@ impl Options {
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// # use getopts::Fail;
+    /// let mut opts = Options::new();
+    /// opts.optopt("o", "optional", "optional text option", "TEXT");
+    /// opts.reqopt("m", "mandatory", "madatory text option", "TEXT");
+    ///
+    /// let result = opts.parse(&["--mandatory", "foo"]);
+    /// assert!(result.is_ok());
+    ///
+    /// let result = opts.parse(&["--optional", "foo"]);
+    /// assert!(result.is_err());
+    /// assert_eq!(Fail::OptionMissing("mandatory".to_owned()), result.unwrap_err());
+    /// ```
     pub fn reqopt(
         &mut self,
         short_name: &str,
