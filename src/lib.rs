@@ -12,19 +12,21 @@
 
 //! Simple getopt alternative.
 //!
-//! Construct a vector of options, either by using `reqopt`, `optopt`, and
-//! `optflag` or by building them from components yourself, and pass them to
-//! `getopts`, along with a vector of actual arguments (not including
-//! `argv[0]`). You'll either get a failure code back, or a match. You'll have
-//! to verify whether the amount of 'free' arguments in the match is what you
-//! expect. Use `opt_*` accessors to get argument values out of the matches
-//! object.
+//! Construct instance of `Options` and configure it by using  `reqopt()`,
+//! `optopt()` and other methods that add option configuration. Then call
+//! `parse()` method and pass into it a vector of actual arguments (not
+//! including `argv[0]`).
+//!
+//! You'll either get a failure code back, or a match. You'll have to verify
+//! whether the amount of 'free' arguments in the match is what you expect. Use
+//! `opt_*` accessors to get argument values out of the matches object.
 //!
 //! Single-character options are expected to appear on the command line with a
 //! single preceding dash; multiple-character options are expected to be
 //! proceeded by two dashes. Options that expect an argument accept their
 //! argument following either a space or an equals sign. Single-character
-//! options don't require the space.
+//! options don't require the space. Everything after double-dash "--"  argument
+//! is considered to be a 'free' argument, even if it starts with dash.
 //!
 //! # Usage
 //!
