@@ -207,12 +207,24 @@ fn test_optflag_missing() {
 }
 
 #[test]
-fn test_opt_end() {
+fn test_free_trailing_missing() {
+    let args = vec![] as Vec<String>;
+    match Options::new().parse(&args) {
+        Ok(ref m) => {
+            assert_eq!(m.free_trailing_start(), None);
+        }
+        _ => panic!(),
+    }
+}
+
+#[test]
+fn test_free_trailing() {
     let args = vec!["--".to_owned(), "-t".to_owned()];
     match Options::new().optflag("t", "test", "testing").parse(&args) {
         Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
+            assert_eq!(m.free_trailing_start(), Some(0));
             assert_eq!(m.free.len(), 1);
             assert_eq!(m.free[0], "-t");
         }
@@ -221,13 +233,26 @@ fn test_opt_end() {
 }
 
 #[test]
-fn test_opt_only_end() {
+fn test_free_trailing_only() {
     let args = vec!["--".to_owned()];
     match Options::new().optflag("t", "test", "testing").parse(&args) {
         Ok(ref m) => {
             assert!(!m.opt_present("test"));
             assert!(!m.opt_present("t"));
+            assert_eq!(m.free_trailing_start(), None);
             assert_eq!(m.free.len(), 0);
+        }
+        _ => panic!(),
+    }
+}
+
+#[test]
+fn test_free_trailing_args() {
+    let args = vec!["pre".to_owned(), "--".to_owned(), "post".to_owned() ];
+    match Options::new().parse(&args) {
+        Ok(ref m) => {
+            assert_eq!(m.free_trailing_start(), Some(1));
+            assert_eq!(m.free.len(), 2);
         }
         _ => panic!(),
     }
