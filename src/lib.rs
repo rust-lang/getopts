@@ -532,7 +532,14 @@ impl Options {
                             } else if was_long
                                 || args.peek().map_or(true, |n| is_arg(&n))
                             {
-                                vals[opt_id].push((arg_pos, Given));
+                                match args.peek() {
+                                    Some(_) => {
+                                        vals[opt_id].push((arg_pos, Val(args.next().unwrap())));
+                                    }
+                                    None => {
+                                        vals[opt_id].push((arg_pos, Given));
+                                    }
+                                }
                             } else {
                                 vals[opt_id].push((arg_pos, Val(args.next().unwrap())));
                             }
