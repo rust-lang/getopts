@@ -420,8 +420,8 @@ fn test_optflagopt() {
     let long_args = vec!["--test".to_string(), "x".to_string()];
     match opts.parse(&long_args) {
         Ok(ref m) => {
-            assert_eq!(m.opt_str("t"), None);
-            assert_eq!(m.opt_str("test"), None);
+            assert_eq!(m.opt_str("t").unwrap(), "x");
+            assert_eq!(m.opt_str("test").unwrap(), "x");
         }
         _ => panic!(),
     }
