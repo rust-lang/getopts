@@ -186,6 +186,7 @@ impl Options {
             desc: desc.to_string(),
             hasarg,
             occur,
+            is_help: false,
         });
         self
     }
@@ -215,6 +216,7 @@ impl Options {
             desc: desc.to_string(),
             hasarg: No,
             occur: Optional,
+            is_help: false,
         });
         self
     }
@@ -245,6 +247,7 @@ impl Options {
             desc: desc.to_string(),
             hasarg: No,
             occur: Multi,
+            is_help: false,
         });
         self
     }
@@ -285,6 +288,7 @@ impl Options {
             desc: desc.to_string(),
             hasarg: Maybe,
             occur: Optional,
+            is_help: false,
         });
         self
     }
@@ -327,6 +331,7 @@ impl Options {
             desc: desc.to_string(),
             hasarg: Yes,
             occur: Multi,
+            is_help: false,
         });
         self
     }
@@ -368,6 +373,7 @@ impl Options {
             desc: desc.to_string(),
             hasarg: Yes,
             occur: Optional,
+            is_help: false,
         });
         self
     }
@@ -411,6 +417,41 @@ impl Options {
             desc: desc.to_string(),
             hasarg: Yes,
             occur: Req,
+            is_help: false,
+        });
+        self
+    }
+
+    /// Create an optional flag `-h`/`--help` that does not take an argument and
+    /// works even if an required flag option is missing.
+    ///
+    /// * `desc` - Description for usage help.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// let mut opts = Options::new();
+    /// opts.helpflag("print this help menu");
+    /// opts.reqopt("m", "mandatory", "madatory text option", "TEXT");
+    ///
+    /// let result = opts.parse(&["--help"]);
+    /// // Success even without the required option.
+    /// assert!(result.is_ok());
+    ///
+    /// let matches = opts.parse(&["-h", "--mandatory", "foo"]).unwrap();
+    /// assert!(matches.opt_present("h"));
+    /// assert!(matches.opt_present("m"));
+    /// ```
+    pub fn helpflag(&mut self, desc: &str) -> &mut Options {
+        self.grps.push(OptGroup {
+            short_name: "h".to_string(),
+            long_name: "help".to_string(),
+            hint: "".to_string(),
+            desc: desc.to_string(),
+            hasarg: No,
+            occur: Optional,
+            is_help: true,
         });
         self
     }
@@ -529,9 +570,7 @@ impl Options {
                             // FloatingFrees is in use.
                             if let Some(i_arg) = i_arg.take() {
                                 vals[opt_id].push((arg_pos, Val(i_arg)));
-                            } else if was_long
-                                || args.peek().map_or(true, |n| is_arg(&n))
-                            {
+                            } else if was_long || args.peek().map_or(true, |n| is_arg(&n)) {
                                 vals[opt_id].push((arg_pos, Given));
                             } else {
                                 vals[opt_id].push((arg_pos, Val(args.next().unwrap())));
@@ -552,8 +591,14 @@ impl Options {
             arg_pos += 1;
         }
         debug_assert_eq!(vals.len(), opts.len());
+        let help_exists = opts
+            .iter()
+            .zip(vals.iter())
+            .any(|(opt, vs)| opt.is_help && !vs.is_empty());
         for (vals, opt) in vals.iter().zip(opts.iter()) {
-            if opt.occur == Req && vals.is_empty() {
+            println!("vals={:?}, opt={:?}", vals, opt);
+
+            if !help_exists && opt.occur == Req && vals.is_empty() {
                 return Err(OptionMissing(opt.name.to_string()));
             }
             if opt.occur != Multi && vals.len() > 1 {
@@ -565,7 +610,12 @@ impl Options {
         // in option does not exist in `free` and must be replaced with `None`
         args_end = args_end.filter(|pos| pos != &free.len());
 
-        Ok(Matches { opts, vals, free, args_end })
+        Ok(Matches {
+            opts,
+            vals,
+            free,
+            args_end,
+        })
     }
 
     /// Derive a short one-line usage summary from a set of long options.
@@ -749,6 +799,8 @@ struct Opt {
     hasarg: HasArg,
     /// How often it can occur
     occur: Occur,
+    /// Whether this option is a help flag.
+    is_help: bool,
     /// Which options it aliases
     aliases: Vec<Opt>,
 }
@@ -769,6 +821,8 @@ struct OptGroup {
     hasarg: HasArg,
     /// How often it can occur
     occur: Occur,
+    /// Whether this option is a help flag.
+    is_help: bool,
 }
 
 /// Describes whether an option is given at all or has a value.
@@ -842,6 +896,7 @@ impl OptGroup {
             long_name,
             hasarg,
             occur,
+            is_help,
             ..
         } = (*self).clone();
 
@@ -851,22 +906,26 @@ impl OptGroup {
                 name: Long(long_name),
                 hasarg,
                 occur,
+                is_help,
                 aliases: Vec::new(),
             },
             (1, 0) => Opt {
                 name: Short(short_name.as_bytes()[0] as char),
                 hasarg,
                 occur,
+                is_help,
                 aliases: Vec::new(),
             },
             (1, _) => Opt {
                 name: Long(long_name),
                 hasarg,
                 occur,
+                is_help,
                 aliases: vec![Opt {
                     name: Short(short_name.as_bytes()[0] as char),
                     hasarg: hasarg,
                     occur: occur,
+                    is_help: false,
                     aliases: Vec::new(),
                 }],
             },
@@ -915,7 +974,10 @@ impl Matches {
     ///
     /// This function will panic if the option name is not defined.
     pub fn opt_positions(&self, name: &str) -> Vec<usize> {
-        self.opt_vals(name).into_iter().map(|(pos, _)| pos).collect()
+        self.opt_vals(name)
+            .into_iter()
+            .map(|(pos, _)| pos)
+            .collect()
     }
 
     /// Returns true if any of several options were matched.

@@ -248,7 +248,7 @@ fn test_free_trailing_only() {
 
 #[test]
 fn test_free_trailing_args() {
-    let args = vec!["pre".to_owned(), "--".to_owned(), "post".to_owned() ];
+    let args = vec!["pre".to_owned(), "--".to_owned(), "post".to_owned()];
     match Options::new().parse(&args) {
         Ok(ref m) => {
             assert_eq!(m.free_trailing_start(), Some(1));
@@ -741,10 +741,7 @@ fn test_multi() {
     );
 
     assert_eq!(matches_both.opts_str_first(&["e"]).unwrap(), "foo");
-    assert_eq!(
-        matches_both.opts_str_first(&["encrypt"]).unwrap(),
-        "bar"
-    );
+    assert_eq!(matches_both.opts_str_first(&["encrypt"]).unwrap(), "bar");
     assert_eq!(
         matches_both.opts_str_first(&["e", "encrypt"]).unwrap(),
         "foo"
@@ -797,12 +794,14 @@ fn test_long_to_short() {
         name: Name::Long("banana".to_string()),
         hasarg: HasArg::Yes,
         occur: Occur::Req,
+        is_help: false,
         aliases: Vec::new(),
     };
     short.aliases = vec![Opt {
         name: Name::Short('b'),
         hasarg: HasArg::Yes,
         occur: Occur::Req,
+        is_help: false,
         aliases: Vec::new(),
     }];
     let mut opts = Options::new();
@@ -1318,4 +1317,16 @@ fn test_opt_strs_pos() {
             (5, "6".to_string())
         ]
     );
+}
+
+#[test]
+fn test_reqopt_with_help() {
+    let mut opts = Options::new();
+    opts.helpflag("Description");
+    opts.reqopt("r", "required", "Description", "TEST");
+
+    match opts.parse(["--help"]) {
+        Ok(_) => (),
+        Err(e) => panic!("{}", e),
+    };
 }
