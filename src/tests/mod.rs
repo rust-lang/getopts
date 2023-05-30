@@ -248,7 +248,7 @@ fn test_free_trailing_only() {
 
 #[test]
 fn test_free_trailing_args() {
-    let args = vec!["pre".to_owned(), "--".to_owned(), "post".to_owned() ];
+    let args = vec!["pre".to_owned(), "--".to_owned(), "post".to_owned()];
     match Options::new().parse(&args) {
         Ok(ref m) => {
             assert_eq!(m.free_trailing_start(), Some(1));
@@ -741,10 +741,7 @@ fn test_multi() {
     );
 
     assert_eq!(matches_both.opts_str_first(&["e"]).unwrap(), "foo");
-    assert_eq!(
-        matches_both.opts_str_first(&["encrypt"]).unwrap(),
-        "bar"
-    );
+    assert_eq!(matches_both.opts_str_first(&["encrypt"]).unwrap(), "bar");
     assert_eq!(
         matches_both.opts_str_first(&["e", "encrypt"]).unwrap(),
         "foo"
@@ -797,12 +794,14 @@ fn test_long_to_short() {
         name: Name::Long("banana".to_string()),
         hasarg: HasArg::Yes,
         occur: Occur::Req,
+        is_help: false,
         aliases: Vec::new(),
     };
     short.aliases = vec![Opt {
         name: Name::Short('b'),
         hasarg: HasArg::Yes,
         occur: Occur::Req,
+        is_help: false,
         aliases: Vec::new(),
     }];
     let mut opts = Options::new();
@@ -1134,7 +1133,7 @@ fn test_long_only_mode() {
 fn test_long_only_mode_no_short_parse() {
     let mut opts = Options::new();
     opts.long_only(true);
-    opts.optflag("h", "help", "Description");
+    opts.optflag("h", "hello", "Description");
     opts.optflag("i", "ignore", "Description");
     opts.optflag("", "hi", "Description");
 
@@ -1155,7 +1154,7 @@ fn test_normal_mode_no_long_parse() {
     // happens.
     let mut opts = Options::new();
     opts.long_only(true);
-    opts.optflag("h", "help", "Description");
+    opts.optflag("h", "hello", "Description");
     opts.optflag("i", "ignore", "Description");
     opts.optflag("", "hi", "Description");
     opts.long_only(false);
@@ -1181,8 +1180,8 @@ fn test_long_name_too_short() {
 #[should_panic]
 fn test_undefined_opt_present() {
     let mut opts = Options::new();
-    opts.optflag("h", "help", "Description");
-    let args = vec!["-h"];
+    opts.optflag("v", "verbose", "Description");
+    let args = vec!["-v"];
     match opts.parse(args) {
         Ok(matches) => assert!(!matches.opt_present("undefined")),
         Err(e) => panic!("{}", e),
@@ -1192,7 +1191,7 @@ fn test_undefined_opt_present() {
 #[test]
 fn test_opt_default() {
     let mut opts = Options::new();
-    opts.optflag("h", "help", "Description");
+    opts.optflag("v", "verbose", "Description");
     opts.optflag("i", "ignore", "Description");
     opts.optflag("r", "run", "Description");
     opts.long_only(false);
@@ -1202,14 +1201,14 @@ fn test_opt_default() {
         Ok(m) => m,
         Err(e) => panic!("{}", e),
     };
-    assert_eq!(matches.opt_default("help", ""), None);
+    assert_eq!(matches.opt_default("verbose", ""), None);
     assert_eq!(matches.opt_default("i", "def"), Some("def".to_string()));
 }
 
 #[test]
 fn test_opt_get() {
     let mut opts = Options::new();
-    opts.optflag("h", "help", "Description");
+    opts.optflag("v", "verbose", "Description");
     opts.optflagopt("i", "ignore", "Description", "true | false");
     opts.optflagopt("r", "run", "Description", "0 .. 10");
     opts.optflagopt("p", "percent", "Description", "0.0 .. 10.0");
@@ -1223,8 +1222,8 @@ fn test_opt_get() {
         Ok(m) => m,
         Err(e) => panic!("{}", e),
     };
-    let h_arg = matches.opt_get::<i32>("help");
-    assert_eq!(h_arg, Ok(None));
+    let v_arg = matches.opt_get::<i32>("verbose");
+    assert_eq!(v_arg, Ok(None));
     let i_arg = matches.opt_get("i");
     assert_eq!(i_arg, Ok(Some(true)));
     let p_arg = matches.opt_get("p");
@@ -1234,7 +1233,7 @@ fn test_opt_get() {
 #[test]
 fn test_opt_get_default() {
     let mut opts = Options::new();
-    opts.optflag("h", "help", "Description");
+    opts.optflag("v", "verbose", "Description");
     opts.optflagopt("i", "ignore", "Description", "true | false");
     opts.optflagopt("r", "run", "Description", "0 .. 10");
     opts.optflagopt("p", "percent", "Description", "0.0 .. 10.0");
@@ -1248,8 +1247,8 @@ fn test_opt_get_default() {
         Ok(m) => m,
         Err(e) => panic!("{}", e),
     };
-    let h_arg = matches.opt_get_default("help", 10);
-    assert_eq!(h_arg, Ok(10));
+    let v_arg = matches.opt_get_default("verbose", 10);
+    assert_eq!(v_arg, Ok(10));
     let i_arg = matches.opt_get_default("i", false);
     assert_eq!(i_arg, Ok(true));
     let p_arg = matches.opt_get_default("p", 10.2);
@@ -1318,4 +1317,16 @@ fn test_opt_strs_pos() {
             (5, "6".to_string())
         ]
     );
+}
+
+#[test]
+fn test_reqopt_with_help() {
+    let mut opts = Options::new();
+    opts.helpflag("Description");
+    opts.reqopt("r", "required", "Description", "TEST");
+
+    match opts.parse(["--help"]) {
+        Ok(_) => (),
+        Err(e) => panic!("{}", e),
+    };
 }
