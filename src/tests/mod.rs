@@ -248,7 +248,7 @@ fn test_free_trailing_only() {
 
 #[test]
 fn test_free_trailing_args() {
-    let args = vec!["pre".to_owned(), "--".to_owned(), "post".to_owned() ];
+    let args = vec!["pre".to_owned(), "--".to_owned(), "post".to_owned()];
     match Options::new().parse(&args) {
         Ok(ref m) => {
             assert_eq!(m.free_trailing_start(), Some(1));
@@ -741,10 +741,7 @@ fn test_multi() {
     );
 
     assert_eq!(matches_both.opts_str_first(&["e"]).unwrap(), "foo");
-    assert_eq!(
-        matches_both.opts_str_first(&["encrypt"]).unwrap(),
-        "bar"
-    );
+    assert_eq!(matches_both.opts_str_first(&["encrypt"]).unwrap(), "bar");
     assert_eq!(
         matches_both.opts_str_first(&["e", "encrypt"]).unwrap(),
         "foo"
@@ -794,7 +791,7 @@ fn test_nospace_conflict() {
 #[test]
 fn test_long_to_short() {
     let mut short = Opt {
-        name: Name::Long("banana".to_string()),
+        name: Name::Long("banana"),
         hasarg: HasArg::Yes,
         occur: Occur::Req,
         aliases: Vec::new(),
@@ -1318,4 +1315,19 @@ fn test_opt_strs_pos() {
             (5, "6".to_string())
         ]
     );
+}
+
+#[test]
+fn test_opt_names_and_desc_not_static() {
+    let short = "t".to_string();
+    let long = "test".to_string();
+    let desc = "test flag".to_string();
+    let hint = "hint".to_string();
+
+    let args = vec!["--test".to_owned(), "value".to_owned()];
+    let m = Options::new()
+        .optopt(&short, &long, &desc, &hint)
+        .parse(&args)
+        .unwrap();
+    assert_eq!(m.opt_str("test").unwrap(), "value");
 }
