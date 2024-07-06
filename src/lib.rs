@@ -22,11 +22,21 @@
 //! `opt_*` accessors to get argument values out of the matches object.
 //!
 //! Single-character options are expected to appear on the command line with a
-//! single preceding dash; multiple-character options are expected to be
-//! proceeded by two dashes. Options that expect an argument accept their
-//! argument following either a space or an equals sign. Single-character
-//! options don't require the space. Everything after double-dash "--"  argument
-//! is considered to be a 'free' argument, even if it starts with dash.
+//! single preceding dash eg. `-u`; multiple-character options are expected to be
+//! proceeded by two dashes eg. `--unified`.
+//! Multiple-character options that have a required argument accept such an
+//! argument following either a space or an equals sign eg. `--unified=102`
+//! or `--unified 102`, but those multiple-character options that have an optional
+//! argument only accept such an argument following an equals sign
+//! eg. `--unified=103`, otherwise using `--unified 104` will consider `104` as
+//! being a `free` argument.
+//! Single-character options don't require a space eg. `-u19` but can have one
+//! even for optional arguments eg. `-u 20`, however they can't accept an
+//! equals sign because eg. `-u=20` will consider `=20` (with the `=` prefix
+//! included) to be the expected argument instead of just the `20`.
+//! Everything after the double-dash "--" argument is considered to be a 'free'
+//! argument, even if it starts with dash eg.
+//! `--arg -d9 -- a_free_arg -dash_prefixed_filename_here_as_a_free_arg`
 //!
 //! # Usage
 //!
