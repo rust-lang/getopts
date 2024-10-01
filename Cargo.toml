@@ -14,7 +14,7 @@ getopts-like option parsing.
 categories = ["command-line-interface"]
 
 [dependencies]
-unicode-width = "0.1.5"
+unicode-width = "0.2.0"
 std = { version = "1.0", package = "rustc-std-workspace-std", optional = true }
 core = { version = "1.0", package = "rustc-std-workspace-core", optional = true }
 
