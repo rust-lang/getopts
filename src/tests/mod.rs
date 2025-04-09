@@ -922,6 +922,41 @@ Options:
 }
 
 #[test]
+fn test_usage_description_newline_handling_custom_width() {
+    let mut opts = Options::new();
+    opts.set_usage_width(30);
+    opts.optflag(
+        "k",
+        "k\u{2013}w\u{2013}",
+        "The word kiwi is normally spelled with two i's",
+    );
+    opts.optflag(
+        "a",
+        "apple",
+        "This description forces a new line.\n Here is a premature\n\
+         newline",
+    );
+
+    let expected = "Usage: fruits
+
+Options:
+    -k, --k–w–          The word kiwi is normally
+                        spelled with two i's
+    -a, --apple         This description forces a new
+                        line.
+                        Here is a premature
+                        newline
+";
+
+    let usage = opts.usage("Usage: fruits");
+
+    debug!("expected: <<{}>>", expected);
+    debug!("generated: <<{}>>", usage);
+    assert!(usage == expected)
+}
+
+
+#[test]
 fn test_usage_description_newline_handling() {
     let mut opts = Options::new();
     opts.optflag(
@@ -943,6 +978,41 @@ Options:
     -a, --apple         This description forces a new line.
                         Here is a premature
                         newline
+";
+
+    let usage = opts.usage("Usage: fruits");
+
+    debug!("expected: <<{}>>", expected);
+    debug!("generated: <<{}>>", usage);
+    assert!(usage == expected)
+}
+
+
+#[test]
+fn test_usage_description_newline_handling_custom_column() {
+    let mut opts = Options::new();
+    opts.set_usage_column(10);
+    opts.optflag(
+        "k",
+        "k\u{2013}w\u{2013}",
+        "The word kiwi is normally spelled with two i's",
+    );
+    opts.optflag(
+        "a",
+        "apple",
+        "This description forces a new line.\n Here is a premature\n\
+         newline",
+    );
+
+    let expected = "Usage: fruits
+
+Options:
+    -k, --k–w–\u{0020}
+          The word kiwi is normally spelled with two i's
+    -a, --apple\u{0020}
+          This description forces a new line.
+          Here is a premature
+          newline
 ";
 
     let usage = opts.usage("Usage: fruits");

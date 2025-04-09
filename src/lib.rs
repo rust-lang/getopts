@@ -131,6 +131,8 @@ pub struct Options {
     grps: Vec<OptGroup>,
     parsing_style: ParsingStyle,
     long_only: bool,
+    usage_column: usize,
+    usage_width: usize,
 }
 
 impl Default for Options {
@@ -146,6 +148,8 @@ impl Options {
             grps: Vec::new(),
             parsing_style: ParsingStyle::FloatingFrees,
             long_only: false,
+            usage_column: 24,
+            usage_width: 54,
         }
     }
 
@@ -604,7 +608,7 @@ impl Options {
 
     /// Derive usage items from a set of options.
     fn usage_items<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a> {
-        let desc_sep = format!("\n{}", repeat(" ").take(24).collect::<String>());
+        let desc_sep = format!("\n{}", repeat(" ").take(self.usage_column).collect::<String>());
 
         let any_short = self.grps.iter().any(|optref| !optref.short_name.is_empty());
 
@@ -664,21 +668,43 @@ impl Options {
             }
 
             let rowlen = row.width();
-            if rowlen < 24 {
-                for _ in 0..24 - rowlen {
+            if rowlen < self.usage_column {
+                for _ in 0..self.usage_column - rowlen {
                     row.push(' ');
                 }
             } else {
                 row.push_str(&desc_sep)
             }
 
-            let desc_rows = each_split_within(&desc, 54);
+            let desc_rows = each_split_within(&desc, self.usage_width);
             row.push_str(&desc_rows.join(&desc_sep));
 
             row
         });
 
         Box::new(rows)
+    }
+
+    /// Get the display column of usage
+    pub fn usage_column(&self) -> usize {
+        self.usage_column.clone()
+    }
+
+    /// Set the display column of usage
+    pub fn set_usage_column(&mut self, column: usize) -> &mut Options {
+        self.usage_column = column;
+        self
+    }
+
+    /// Get the display width of usage
+    pub fn usage_width(&self) -> usize {
+        self.usage_width.clone()
+    }
+
+    /// Set the display width of usage
+    pub fn set_usage_width(&mut self, width: usize) -> &mut Options {
+        self.usage_width = width;
+        self
     }
 }
 
