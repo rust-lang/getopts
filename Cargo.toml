@@ -11,6 +11,8 @@ description = """
 getopts-like option parsing.
 """
 categories = ["command-line-interface"]
+edition = "2018"
+rust-version = "1.49"
 
 [dependencies]
 unicode-width = "0.1.5"
