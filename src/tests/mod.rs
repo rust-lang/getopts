@@ -248,7 +248,7 @@ fn test_free_trailing_only() {
 
 #[test]
 fn test_free_trailing_args() {
-    let args = vec!["pre".to_owned(), "--".to_owned(), "post".to_owned() ];
+    let args = vec!["pre".to_owned(), "--".to_owned(), "post".to_owned()];
     match Options::new().parse(&args) {
         Ok(ref m) => {
             assert_eq!(m.free_trailing_start(), Some(1));
@@ -741,10 +741,7 @@ fn test_multi() {
     );
 
     assert_eq!(matches_both.opts_str_first(&["e"]).unwrap(), "foo");
-    assert_eq!(
-        matches_both.opts_str_first(&["encrypt"]).unwrap(),
-        "bar"
-    );
+    assert_eq!(matches_both.opts_str_first(&["encrypt"]).unwrap(), "bar");
     assert_eq!(
         matches_both.opts_str_first(&["e", "encrypt"]).unwrap(),
         "foo"

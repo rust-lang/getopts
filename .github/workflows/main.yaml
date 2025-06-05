@@ -21,10 +21,22 @@ jobs:
       - name: Install Rust
         run: rustup update ${{ matrix.rust }} && rustup default ${{ matrix.rust }}
       - run: cargo test
+
+  doc_fmt:
+    name: Document and check formatting
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@master
+      - name: Install Rust
+        run: |
+          rustup update nightly
+          rustup default nightly
+          rustup component add rustfmt
       - run: cargo doc
+      - run: cargo fmt --check
 
   msrv:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@master
       - name: Install Rust
