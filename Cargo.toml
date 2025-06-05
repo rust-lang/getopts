@@ -1,6 +1,6 @@
 [package]
 name = "getopts"
-version = "0.2.21" # don't forget to update html_root_url
+version = "0.2.21"
 authors = ["The Rust Project Developers"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"

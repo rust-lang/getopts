@@ -96,8 +96,7 @@
 
 #![doc(
     html_logo_url = "https://www.rust-lang.org/logos/rust-logo-128x128-blk-v2.png",
-    html_favicon_url = "https://www.rust-lang.org/favicon.ico",
-    html_root_url = "https://docs.rs/getopts/0.2.21"
+    html_favicon_url = "https://www.rust-lang.org/favicon.ico"
 )]
 #![deny(missing_docs)]
 #![cfg_attr(test, deny(warnings))]
@@ -529,9 +528,7 @@ impl Options {
                             // FloatingFrees is in use.
                             if let Some(i_arg) = i_arg.take() {
                                 vals[opt_id].push((arg_pos, Val(i_arg)));
-                            } else if was_long
-                                || args.peek().map_or(true, |n| is_arg(&n))
-                            {
+                            } else if was_long || args.peek().map_or(true, |n| is_arg(&n)) {
                                 vals[opt_id].push((arg_pos, Given));
                             } else {
                                 vals[opt_id].push((arg_pos, Val(args.next().unwrap())));
@@ -565,7 +562,12 @@ impl Options {
         // in option does not exist in `free` and must be replaced with `None`
         args_end = args_end.filter(|pos| pos != &free.len());
 
-        Ok(Matches { opts, vals, free, args_end })
+        Ok(Matches {
+            opts,
+            vals,
+            free,
+            args_end,
+        })
     }
 
     /// Derive a short one-line usage summary from a set of long options.
@@ -915,7 +917,10 @@ impl Matches {
     ///
     /// This function will panic if the option name is not defined.
     pub fn opt_positions(&self, name: &str) -> Vec<usize> {
-        self.opt_vals(name).into_iter().map(|(pos, _)| pos).collect()
+        self.opt_vals(name)
+            .into_iter()
+            .map(|(pos, _)| pos)
+            .collect()
     }
 
     /// Returns true if any of several options were matched.
