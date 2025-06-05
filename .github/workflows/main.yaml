@@ -1,9 +1,10 @@
+name: CI
+on: [push, pull_request]
+
 env:
   RUSTFLAGS: "-Dwarnings"
   RUSTDOCFLAGS: "-Dwarnings"
 
-name: CI
-on: [push, pull_request]
 jobs:
   test:
     name: Test
