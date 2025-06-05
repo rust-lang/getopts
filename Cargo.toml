@@ -1,6 +1,6 @@
 [package]
 name = "getopts"
-version = "0.2.21"
+version = "0.2.22"
 authors = ["The Rust Project Developers"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
