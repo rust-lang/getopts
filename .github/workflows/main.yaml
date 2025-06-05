@@ -45,6 +45,4 @@ jobs:
             jq -r '.packages[] | select(.name == "getopts").rust_version'
           )"
           rustup update "$msrv" && rustup default "$msrv"
-      - run: |
-          cargo update -p unicode-width --precise 0.1.8
-          cargo check
+      - run: cargo check
