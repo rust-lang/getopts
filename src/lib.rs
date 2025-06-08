@@ -177,8 +177,7 @@ impl Options {
         hasarg: HasArg,
         occur: Occur,
     ) -> &mut Options {
-        validate_names(short_name, long_name);
-        self.grps.push(OptGroup {
+        self.push_group(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
             hint: hint.to_string(),
@@ -206,8 +205,7 @@ impl Options {
     /// assert!(matches.opt_present("h"));
     /// ```
     pub fn optflag(&mut self, short_name: &str, long_name: &str, desc: &str) -> &mut Options {
-        validate_names(short_name, long_name);
-        self.grps.push(OptGroup {
+        self.push_group(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
             hint: "".to_string(),
@@ -236,8 +234,7 @@ impl Options {
     /// assert_eq!(2, matches.opt_count("v"));
     /// ```
     pub fn optflagmulti(&mut self, short_name: &str, long_name: &str, desc: &str) -> &mut Options {
-        validate_names(short_name, long_name);
-        self.grps.push(OptGroup {
+        self.push_group(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
             hint: "".to_string(),
@@ -276,8 +273,7 @@ impl Options {
         desc: &str,
         hint: &str,
     ) -> &mut Options {
-        validate_names(short_name, long_name);
-        self.grps.push(OptGroup {
+        self.push_group(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
             hint: hint.to_string(),
@@ -318,8 +314,7 @@ impl Options {
         desc: &str,
         hint: &str,
     ) -> &mut Options {
-        validate_names(short_name, long_name);
-        self.grps.push(OptGroup {
+        self.push_group(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
             hint: hint.to_string(),
@@ -359,8 +354,7 @@ impl Options {
         desc: &str,
         hint: &str,
     ) -> &mut Options {
-        validate_names(short_name, long_name);
-        self.grps.push(OptGroup {
+        self.push_group(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
             hint: hint.to_string(),
@@ -402,8 +396,7 @@ impl Options {
         desc: &str,
         hint: &str,
     ) -> &mut Options {
-        validate_names(short_name, long_name);
-        self.grps.push(OptGroup {
+        self.push_group(OptGroup {
             short_name: short_name.to_string(),
             long_name: long_name.to_string(),
             hint: hint.to_string(),
@@ -682,21 +675,39 @@ impl Options {
 
         Box::new(rows)
     }
-}
 
-fn validate_names(short_name: &str, long_name: &str) {
-    let len = short_name.len();
-    assert!(
-        len == 1 || len == 0,
-        "the short_name (first argument) should be a single character, \
-         or an empty string for none"
-    );
-    let len = long_name.len();
-    assert!(
-        len == 0 || len > 1,
-        "the long_name (second argument) should be longer than a single \
-         character, or an empty string for none"
-    );
+    fn push_group(&mut self, group: OptGroup) {
+        self.validate_names(&group);
+        self.grps.push(group);
+    }
+
+    fn validate_names(&self, group: &OptGroup) {
+        let len = group.short_name.len();
+        assert!(
+            len == 1 || len == 0,
+            "the short_name (first argument) should be a single character, \
+            or an empty string for none"
+        );
+        let len = group.long_name.len();
+        assert!(
+            len == 0 || len > 1,
+            "the long_name (second argument) should be longer than a single \
+            character, or an empty string for none"
+        );
+
+        debug_assert!(
+            group.short_name.is_empty()
+                || self.grps.iter().all(|g| g.short_name != group.short_name),
+            "the short option name -{} caused conflict among multiple options",
+            group.short_name,
+        );
+        debug_assert!(
+            group.long_name.is_empty()
+                || self.grps.iter().all(|g| g.long_name != group.long_name),
+            "the long option name --{} caused conflict among multiple options",
+            group.long_name,
+        );
+    }
 }
 
 /// What parsing style to use when parsing arguments.

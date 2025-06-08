@@ -1316,3 +1316,31 @@ fn test_opt_strs_pos() {
         ]
     );
 }
+
+#[cfg(debug_assertions)]
+#[test]
+#[should_panic(expected = "the short option name -s caused conflict among multiple options")]
+fn test_check_conflicts_in_short_name() {
+    let mut opts = Options::new();
+    opts.optflag("s", "long", "");
+    opts.optflag("s", "other", "");
+}
+
+#[cfg(debug_assertions)]
+#[test]
+#[should_panic(expected = "the long option name --long caused conflict among multiple options")]
+fn test_check_conflicts_in_long_name() {
+    let mut opts = Options::new();
+    opts.optflag("a", "long", "");
+    opts.optflag("b", "long", "");
+}
+
+#[cfg(debug_assertions)]
+#[test]
+fn test_empty_names_should_not_cause_conflict() {
+    let mut opts = Options::new();
+    opts.optflag("", "long1", "");
+    opts.optflag("", "long2", "");
+    opts.optflag("a", "", "");
+    opts.optflag("b", "", "");
+}
