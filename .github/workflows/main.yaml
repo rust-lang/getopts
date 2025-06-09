@@ -20,6 +20,9 @@ jobs:
       - uses: actions/checkout@master
       - name: Install Rust
         run: rustup update ${{ matrix.rust }} && rustup default ${{ matrix.rust }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
       - run: cargo test
 
   doc_fmt:
@@ -32,6 +35,7 @@ jobs:
           rustup update nightly
           rustup default nightly
           rustup component add rustfmt
+      - uses: Swatinem/rust-cache@v2
       - run: cargo doc
       - run: cargo fmt --check
 
@@ -45,4 +49,5 @@ jobs:
             jq -r '.packages[] | select(.name == "getopts").rust_version'
           )"
           rustup update "$msrv" && rustup default "$msrv"
+      - uses: Swatinem/rust-cache@v2
       - run: cargo check
