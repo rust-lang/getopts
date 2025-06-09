@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.23](https://github.com/rust-lang/getopts/compare/v0.2.22...v0.2.23) - 2025-06-09
+
+### Other
+
+- Add caching
+- Remove redundant configuration from Cargo.toml
+- Bump unicode-width to 0.2.0
+- Update the MSRV to 1.66 and edition to 2021
+
 ## [0.2.22](https://github.com/rust-lang/getopts/compare/v0.2.21...v0.2.22) - 2025-06-05
 
 ### Other
