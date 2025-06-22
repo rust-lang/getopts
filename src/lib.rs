@@ -74,7 +74,7 @@
 //!
 //!     let mut opts = Options::new();
 //!     opts.optopt("o", "", "set output file name", "NAME");
-//!     opts.optflag("h", "help", "print this help menu");
+//!     opts.helpflag("print this help menu");
 //!     let matches = match opts.parse(&args[1..]) {
 //!         Ok(m) => { m }
 //!         Err(f) => { panic!("{}", f.to_string()) }
@@ -185,14 +185,15 @@ impl Options {
             desc: desc.to_string(),
             hasarg,
             occur,
+            is_help: false,
         });
         self
     }
 
     /// Create a long option that is optional and does not take an argument.
     ///
-    /// * `short_name` - e.g. `"h"` for a `-h` option, or `""` for none
-    /// * `long_name` - e.g. `"help"` for a `--help` option, or `""` for none
+    /// * `short_name` - e.g. `"f"` for a `-f` option, or `""` for none
+    /// * `long_name` - e.g. `"foo"` for a `--foo` option, or `""` for none
     /// * `desc` - Description for usage help
     ///
     /// # Example
@@ -200,10 +201,10 @@ impl Options {
     /// ```
     /// # use getopts::Options;
     /// let mut opts = Options::new();
-    /// opts.optflag("h", "help", "help flag");
+    /// opts.optflag("f", "foo", "sample flag");
     ///
-    /// let matches = opts.parse(&["-h"]).unwrap();
-    /// assert!(matches.opt_present("h"));
+    /// let matches = opts.parse(&["-f"]).unwrap();
+    /// assert!(matches.opt_present("f"));
     /// ```
     pub fn optflag(&mut self, short_name: &str, long_name: &str, desc: &str) -> &mut Options {
         validate_names(short_name, long_name);
@@ -214,6 +215,7 @@ impl Options {
             desc: desc.to_string(),
             hasarg: No,
             occur: Optional,
+            is_help: false,
         });
         self
     }
@@ -221,8 +223,8 @@ impl Options {
     /// Create a long option that can occur more than once and does not
     /// take an argument.
     ///
-    /// * `short_name` - e.g. `"h"` for a `-h` option, or `""` for none
-    /// * `long_name` - e.g. `"help"` for a `--help` option, or `""` for none
+    /// * `short_name` - e.g. `"f"` for a `-f` option, or `""` for none
+    /// * `long_name` - e.g. `"foo"` for a `--foo` option, or `""` for none
     /// * `desc` - Description for usage help
     ///
     /// # Example
@@ -244,14 +246,15 @@ impl Options {
             desc: desc.to_string(),
             hasarg: No,
             occur: Multi,
+            is_help: false,
         });
         self
     }
 
     /// Create a long option that is optional and takes an optional argument.
     ///
-    /// * `short_name` - e.g. `"h"` for a `-h` option, or `""` for none
-    /// * `long_name` - e.g. `"help"` for a `--help` option, or `""` for none
+    /// * `short_name` - e.g. `"f"` for a `-f` option, or `""` for none
+    /// * `long_name` - e.g. `"foo"` for a `--foo` option, or `""` for none
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
@@ -284,6 +287,7 @@ impl Options {
             desc: desc.to_string(),
             hasarg: Maybe,
             occur: Optional,
+            is_help: false,
         });
         self
     }
@@ -291,8 +295,8 @@ impl Options {
     /// Create a long option that is optional, takes an argument, and may occur
     /// multiple times.
     ///
-    /// * `short_name` - e.g. `"h"` for a `-h` option, or `""` for none
-    /// * `long_name` - e.g. `"help"` for a `--help` option, or `""` for none
+    /// * `short_name` - e.g. `"f"` for a `-f` option, or `""` for none
+    /// * `long_name` - e.g. `"foo"` for a `--foo` option, or `""` for none
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
@@ -326,14 +330,15 @@ impl Options {
             desc: desc.to_string(),
             hasarg: Yes,
             occur: Multi,
+            is_help: false,
         });
         self
     }
 
     /// Create a long option that is optional and takes an argument.
     ///
-    /// * `short_name` - e.g. `"h"` for a `-h` option, or `""` for none
-    /// * `long_name` - e.g. `"help"` for a `--help` option, or `""` for none
+    /// * `short_name` - e.g. `"f"` for a `-f` option, or `""` for none
+    /// * `long_name` - e.g. `"foo"` for a `--foo` option, or `""` for none
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
@@ -367,14 +372,15 @@ impl Options {
             desc: desc.to_string(),
             hasarg: Yes,
             occur: Optional,
+            is_help: false,
         });
         self
     }
 
     /// Create a long option that is required and takes an argument.
     ///
-    /// * `short_name` - e.g. `"h"` for a `-h` option, or `""` for none
-    /// * `long_name` - e.g. `"help"` for a `--help` option, or `""` for none
+    /// * `short_name` - e.g. `"f"` for a `-f` option, or `""` for none
+    /// * `long_name` - e.g. `"foo"` for a `--foo` option, or `""` for none
     /// * `desc` - Description for usage help
     /// * `hint` - Hint that is used in place of the argument in the usage help,
     ///   e.g. `"FILE"` for a `-o FILE` option
@@ -410,6 +416,41 @@ impl Options {
             desc: desc.to_string(),
             hasarg: Yes,
             occur: Req,
+            is_help: false,
+        });
+        self
+    }
+
+    /// Create an optional flag `-h`/`--help` that does not take an argument and
+    /// works even if an required flag option is missing.
+    ///
+    /// * `desc` - Description for usage help.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use getopts::Options;
+    /// let mut opts = Options::new();
+    /// opts.helpflag("print this help menu");
+    /// opts.reqopt("m", "mandatory", "madatory text option", "TEXT");
+    ///
+    /// let result = opts.parse(&["--help"]);
+    /// // Success even without the required option.
+    /// assert!(result.is_ok());
+    ///
+    /// let matches = opts.parse(&["-h", "--mandatory", "foo"]).unwrap();
+    /// assert!(matches.opt_present("h"));
+    /// assert!(matches.opt_present("m"));
+    /// ```
+    pub fn helpflag(&mut self, desc: &str) -> &mut Options {
+        self.grps.push(OptGroup {
+            short_name: "h".to_string(),
+            long_name: "help".to_string(),
+            hint: "".to_string(),
+            desc: desc.to_string(),
+            hasarg: No,
+            occur: Multi,
+            is_help: true,
         });
         self
     }
@@ -549,8 +590,14 @@ impl Options {
             arg_pos += 1;
         }
         debug_assert_eq!(vals.len(), opts.len());
+        let help_exists = opts
+            .iter()
+            .zip(vals.iter())
+            .any(|(opt, vs)| opt.is_help && !vs.is_empty());
         for (vals, opt) in vals.iter().zip(opts.iter()) {
-            if opt.occur == Req && vals.is_empty() {
+            println!("vals={:?}, opt={:?}", vals, opt);
+
+            if !help_exists && opt.occur == Req && vals.is_empty() {
                 return Err(OptionMissing(opt.name.to_string()));
             }
             if opt.occur != Multi && vals.len() > 1 {
@@ -713,10 +760,10 @@ pub enum ParsingStyle {
 #[derive(Clone, Debug, PartialEq, Eq)]
 enum Name {
     /// A string representing the long name of an option.
-    /// For example: "help"
+    /// For example: "verbose"
     Long(String),
     /// A char representing the short name of an option.
-    /// For example: 'h'
+    /// For example: 'v'
     Short(char),
 }
 
@@ -751,17 +798,19 @@ struct Opt {
     hasarg: HasArg,
     /// How often it can occur
     occur: Occur,
+    /// Whether this option is a help flag.
+    is_help: bool,
     /// Which options it aliases
     aliases: Vec<Opt>,
 }
 
-/// One group of options, e.g., both `-h` and `--help`, along with
+/// One group of options, e.g., both `-v` and `--verbose`, along with
 /// their shared description and properties.
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct OptGroup {
-    /// Short name of the option, e.g. `h` for a `-h` option
+    /// Short name of the option, e.g. `v` for a `-v` option
     short_name: String,
-    /// Long name of the option, e.g. `help` for a `--help` option
+    /// Long name of the option, e.g. `verbose` for a `--verbose` option
     long_name: String,
     /// Hint for argument, e.g. `FILE` for a `-o FILE` option
     hint: String,
@@ -771,6 +820,8 @@ struct OptGroup {
     hasarg: HasArg,
     /// How often it can occur
     occur: Occur,
+    /// Whether this option is a help flag.
+    is_help: bool,
 }
 
 /// Describes whether an option is given at all or has a value.
@@ -844,6 +895,7 @@ impl OptGroup {
             long_name,
             hasarg,
             occur,
+            is_help,
             ..
         } = (*self).clone();
 
@@ -853,22 +905,26 @@ impl OptGroup {
                 name: Long(long_name),
                 hasarg,
                 occur,
+                is_help,
                 aliases: Vec::new(),
             },
             (1, 0) => Opt {
                 name: Short(short_name.as_bytes()[0] as char),
                 hasarg,
                 occur,
+                is_help,
                 aliases: Vec::new(),
             },
             (1, _) => Opt {
                 name: Long(long_name),
                 hasarg,
                 occur,
+                is_help,
                 aliases: vec![Opt {
                     name: Short(short_name.as_bytes()[0] as char),
                     hasarg: hasarg,
                     occur: occur,
+                    is_help: false,
                     aliases: Vec::new(),
                 }],
             },
