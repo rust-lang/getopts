@@ -888,6 +888,7 @@ Options:
 }
 
 #[test]
+#[cfg(feature = "unicode")]
 fn test_usage_description_multibyte_handling() {
     let mut opts = Options::new();
     opts.optflag(
@@ -919,6 +920,7 @@ Options:
 }
 
 #[test]
+#[cfg(feature = "unicode")]
 fn test_usage_description_newline_handling() {
     let mut opts = Options::new();
     opts.optflag(
@@ -950,6 +952,7 @@ Options:
 }
 
 #[test]
+#[cfg(feature = "unicode")]
 fn test_usage_multiwidth() {
     let mut opts = Options::new();
     opts.optflag("a", "apple", "apple description");
