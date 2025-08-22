@@ -19,5 +19,5 @@ log = "0.4"
 
 [features]
 default = ["unicode"]
-rustc-dep-of-std = ["unicode-width/rustc-dep-of-std", "std", "core"]
+rustc-dep-of-std = ["std", "core"]
 unicode = ["dep:unicode-width"]
