@@ -21,22 +21,35 @@
 //! whether the amount of 'free' arguments in the match is what you expect. Use
 //! `opt_*` accessors to get argument values out of the matches object.
 //!
-//! Single-character options are expected to appear on the command line with a
-//! single preceding dash eg. `-u`; multiple-character options are expected to be
-//! proceeded by two dashes eg. `--unified`.
-//! Multiple-character options that have a required argument accept such an
-//! argument following either a space or an equals sign eg. `--unified=102`
-//! or `--unified 102`, but those multiple-character options that have an optional
-//! argument only accept such an argument following an equals sign
-//! eg. `--unified=103`, otherwise using `--unified 104` will consider `104` as
-//! being a `free` argument.
-//! Single-character options don't require a space eg. `-u19` but can have one
-//! even for optional arguments eg. `-u 20`, however they can't accept an
-//! equals sign because eg. `-u=20` will consider `=20` (with the `=` prefix
-//! included) to be the expected argument instead of just the `20`.
-//! Everything after the double-dash "--" argument is considered to be a 'free'
-//! argument, even if it starts with dash eg.
-//! `--arg -d9 -- a_free_arg -dash_prefixed_filename_here_as_a_free_arg`
+//! Single-character options use a single dash (e.g. `-u`).
+//! Multiple-character options use two dashes (e.g. `--unified`).
+//!
+//! For multiple-character options:
+//! - required arguments may be provided using either a space or `=`
+//! - optional arguments must be provided using `=`
+//!
+//! Examples:
+//! ```text
+//! --width=80     # required argument via '='
+//! --width 80     # required argument via space
+//! --unified=3    # optional argument via '='
+//! --unified 4    # bad, '4' is treated as a 'free' argument
+//! ```
+//!
+//! For single-character options, arguments may be provided with or without a
+//! space, but not using `=`.
+//!
+//! Examples:
+//! ```text
+//! -u19              # argument without space
+//! -u 19             # argument with space
+//! -u=20             # bad, argument is parsed as '=20'
+//! ```
+//!
+//! The double-dash separator `--` terminates option parsing. Everything after it
+//! is treated as a 'free' argument, even if it starts with a dash. For example:
+//! `--brief -u9 -- plus.txt -.txt`
+
 //!
 //! # Usage
 //!
