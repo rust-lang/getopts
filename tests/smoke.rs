@@ -4,5 +4,7 @@ use std::env;
 
 #[test]
 fn main() {
-    getopts::Options::new().parse(env::args()).unwrap();
+    let program = env::args().next().unwrap();
+
+    getopts::Options::new().parse([program]).unwrap();
 }
