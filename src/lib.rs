@@ -53,10 +53,10 @@
 //! ```{.rust}
 //! extern crate getopts;
 //! use getopts::Options;
-//! use std::env;
+//! use std::{env, ffi::OsStr};
 //!
-//! fn do_work(inp: &str, out: Option<String>) {
-//!     println!("{}", inp);
+//! fn do_work(inp: &OsStr, out: Option<String>) {
+//!     println!("{}", inp.display());
 //!     match out {
 //!         Some(x) => println!("{}", x),
 //!         None => println!("No Output"),
@@ -84,8 +84,8 @@
 //!         return;
 //!     }
 //!     let output = matches.opt_str("o");
-//!     let input = if !matches.free.is_empty() {
-//!         matches.free[0].clone()
+//!     let input = if !matches.free_os().is_empty() {
+//!         matches.free_os()[0].clone()
 //!     } else {
 //!         print_usage(&program, opts);
 //!         return;
@@ -112,7 +112,7 @@ use self::Occur::*;
 use self::Optval::*;
 
 use std::error::Error;
-use std::ffi::OsStr;
+use std::ffi::{OsStr, OsString};
 use std::fmt;
 use std::iter::{repeat, IntoIterator};
 use std::result;
@@ -443,35 +443,33 @@ impl Options {
         let mut vals = (0..opts.len())
             .map(|_| Vec::new())
             .collect::<Vec<Vec<(usize, Optval)>>>();
-        let mut free: Vec<String> = Vec::new();
+        let mut free: Vec<OsString> = Vec::new();
         let mut args_end = None;
 
         let args = args
             .into_iter()
-            .map(|i| {
-                i.as_ref()
-                    .to_str()
-                    .ok_or_else(|| Fail::UnrecognizedOption(format!("{:?}", i.as_ref())))
-                    .map(|s| s.to_owned())
-            })
-            .collect::<::std::result::Result<Vec<_>, _>>()?;
+            .map(|i| i.as_ref().to_owned())
+            .collect::<Vec<_>>();
+
         let mut args = args.into_iter().peekable();
         let mut arg_pos = 0;
         while let Some(cur) = args.next() {
             if !is_arg(&cur) {
                 free.push(cur);
                 match self.parsing_style {
-                    ParsingStyle::FloatingFrees => {}
+                    ParsingStyle::FloatingFrees => continue,
                     ParsingStyle::StopAtFirstFree => {
                         free.extend(args);
                         break;
                     }
                 }
-            } else if cur == "--" {
+            } else if cur == OsStr::new("--") {
                 args_end = Some(free.len());
                 free.extend(args);
                 break;
             } else {
+                let cur = non_string_to_err(&cur)?;
+
                 let mut name = None;
                 let mut i_arg = None;
                 let mut was_long = true;
@@ -543,13 +541,15 @@ impl Options {
                             } else if was_long || args.peek().map_or(true, |n| is_arg(&n)) {
                                 vals[opt_id].push((arg_pos, Given));
                             } else {
-                                vals[opt_id].push((arg_pos, Val(args.next().unwrap())));
+                                let n = non_string_to_err(&args.next().unwrap())?.to_owned();
+                                vals[opt_id].push((arg_pos, Val(n)));
                             }
                         }
                         Yes => {
                             if let Some(i_arg) = i_arg.take() {
                                 vals[opt_id].push((arg_pos, Val(i_arg)));
                             } else if let Some(n) = args.next() {
+                                let n = non_string_to_err(&n)?.to_owned();
                                 vals[opt_id].push((arg_pos, Val(n)));
                             } else {
                                 return Err(ArgumentMissing(nm.to_string()));
@@ -800,10 +800,8 @@ pub struct Matches {
     opts: Vec<Opt>,
     /// Values of the Options that matched and their positions
     vals: Vec<Vec<(usize, Optval)>>,
-
     /// Free string fragments
-    pub free: Vec<String>,
-
+    free: Vec<OsString>,
     /// Index of first free fragment after "--" separator
     args_end: Option<usize>,
 }
@@ -900,6 +898,7 @@ impl Matches {
     fn opt_val(&self, nm: &str) -> Option<Optval> {
         self.opt_vals(nm).into_iter().map(|(_, o)| o).next()
     }
+
     /// Returns true if an option was defined
     pub fn opt_defined(&self, name: &str) -> bool {
         find_opt(&self.opts, &Name::from_str(name)).is_some()
@@ -1145,12 +1144,13 @@ impl Matches {
     ///
     /// ```
     /// # use getopts::Options;
+    /// # use std::ffi::OsStr;
     /// let mut opts = Options::new();
     ///
     /// let matches = opts.parse(&vec!["arg1", "--", "arg2"]).unwrap();
     /// let end_pos = matches.free_trailing_start().unwrap();
     /// assert_eq!(end_pos, 1);
-    /// assert_eq!(matches.free[end_pos], "arg2".to_owned());
+    /// assert_eq!(matches.free_os()[end_pos], OsStr::new("arg2"));
     /// ```
     ///
     /// If the double-dash is missing from argument list or if there are no
@@ -1170,10 +1170,32 @@ impl Matches {
     pub fn free_trailing_start(&self) -> Option<usize> {
         self.args_end
     }
+
+    /// Returns a vector of free arguments if they are strings.
+    pub fn free(&self) -> result::Result<Vec<&str>, Fail> {
+        self.free.iter().map(|os| non_string_to_err(os)).collect()
+    }
+
+    /// Returns a slice to all free arguments.
+    pub fn free_os(&self) -> &[OsString] {
+        &self.free
+    }
 }
 
-fn is_arg(arg: &str) -> bool {
-    arg.as_bytes().get(0) == Some(&b'-') && arg.len() > 1
+fn is_arg(arg: &OsStr) -> bool {
+    // Note: We make this decision before validating this as a string so that non-argument values
+    // are allowed to be any OS bytes. Hence we need to access the first byte. We would do this
+    // with [`OsStr::as_encoded_bytes`] but that conflicts with the MSRV policy (1.74 vs 1.66). As
+    // a workaround a lossy conversion to a string allows us to access the first character as bytes
+    // which also remains the first character exactly if it occurs in the expected position. If
+    // that character matches we can can also be sure that any additional bytes are part of another
+    // (potentially non-UTF8) character which we treat as an argument's name.
+    arg.to_string_lossy().as_bytes().get(0) == Some(&b'-') && arg.len() > 1
+}
+
+fn non_string_to_err(cur: &OsStr) -> result::Result<&str, Fail> {
+    cur.to_str()
+        .ok_or_else(|| Fail::UnrecognizedOption(format!("{:?}", cur)))
 }
 
 fn find_opt(opts: &[Opt], nm: &Name) -> Option<usize> {
