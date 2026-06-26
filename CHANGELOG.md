@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.25](https://github.com/rust-lang/getopts/compare/v0.2.24...v0.2.25) - 2026-06-26
+
+### Other
+
+- Fix smoke test harness arguments ([#138](https://github.com/rust-lang/getopts/pull/138))
+
 ## [0.2.24](https://github.com/rust-lang/getopts/compare/v0.2.23...v0.2.24) - 2025-08-29
 
 ### Other
