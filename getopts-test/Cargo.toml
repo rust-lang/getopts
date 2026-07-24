@@ -1,0 +1,14 @@
+[package]
+name = "getopts-test"
+version = "0.0.0"
+edition = "2021"
+rust-version = "1.66"
+publish = false
+
+[dependencies]
+# Preserve the workspace's `--no-default-features` test coverage.
+getopts = { path = "..", default-features = false }
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
