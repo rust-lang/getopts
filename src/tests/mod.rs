@@ -22,7 +22,7 @@ fn test_split_within() {
     );
     t(
         "\nMary had a little lamb\nLittle lamb\n",
-        ::std::usize::MAX,
+        usize::MAX,
         &[
             "Mary had a little lamb".to_string(),
             "Little lamb".to_string(),
