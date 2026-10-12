@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.25](https://github.com/rust-lang/getopts/compare/v0.2.24...v0.2.25) - 2026-10-12
+
+### Other
+
+- Switch to trusted publishing and rename default branch to `main` ([#144](https://github.com/rust-lang/getopts/pull/144))
+- Remove ignore-lexer-test line ([#141](https://github.com/rust-lang/getopts/pull/141))
+- Fix smoke test harness arguments ([#138](https://github.com/rust-lang/getopts/pull/138))
+
 ## [0.2.24](https://github.com/rust-lang/getopts/compare/v0.2.23...v0.2.24) - 2025-08-29
 
 ### Other
