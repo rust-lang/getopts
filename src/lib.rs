@@ -136,21 +136,21 @@ mod tests;
 
 /// A description of the options that a program can handle.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Options {
-    grps: Vec<OptGroup>,
+pub struct Options<'a> {
+    grps: Vec<OptGroup<'a>>,
     parsing_style: ParsingStyle,
     long_only: bool,
 }
 
-impl Default for Options {
+impl<'a> Default for Options<'a> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Options {
+impl<'a> Options<'a> {
     /// Create a blank set of options.
-    pub fn new() -> Options {
+    pub fn new() -> Self {
         Options {
             grps: Vec::new(),
             parsing_style: ParsingStyle::FloatingFrees,
@@ -159,7 +159,7 @@ impl Options {
     }
 
     /// Set the parsing style.
-    pub fn parsing_style(&mut self, style: ParsingStyle) -> &mut Options {
+    pub fn parsing_style(&mut self, style: ParsingStyle) -> &mut Self {
         self.parsing_style = style;
         self
     }
@@ -172,7 +172,7 @@ impl Options {
     /// of "-a=b"; in the ordinary mode this will parse a short option
     /// "-a" with argument "=b"; whereas in long-options-only mode the
     /// argument will be simply "b".
-    pub fn long_only(&mut self, long_only: bool) -> &mut Options {
+    pub fn long_only(&mut self, long_only: bool) -> &mut Self {
         self.long_only = long_only;
         self
     }
@@ -180,19 +180,19 @@ impl Options {
     /// Create a generic option group, stating all parameters explicitly.
     pub fn opt(
         &mut self,
-        short_name: &str,
-        long_name: &str,
-        desc: &str,
-        hint: &str,
+        short_name: &'a str,
+        long_name: &'a str,
+        desc: &'a str,
+        hint: &'a str,
         hasarg: HasArg,
         occur: Occur,
-    ) -> &mut Options {
+    ) -> &mut Self {
         validate_names(short_name, long_name);
         self.grps.push(OptGroup {
-            short_name: short_name.to_string(),
-            long_name: long_name.to_string(),
-            hint: hint.to_string(),
-            desc: desc.to_string(),
+            short_name: short_name,
+            long_name: long_name,
+            hint: hint,
+            desc: desc,
             hasarg,
             occur,
         });
@@ -215,13 +215,13 @@ impl Options {
     /// let matches = opts.parse(&["-h"]).unwrap();
     /// assert!(matches.opt_present("h"));
     /// ```
-    pub fn optflag(&mut self, short_name: &str, long_name: &str, desc: &str) -> &mut Options {
+    pub fn optflag(&mut self, short_name: &'a str, long_name: &'a str, desc: &'a str) -> &mut Self {
         validate_names(short_name, long_name);
         self.grps.push(OptGroup {
-            short_name: short_name.to_string(),
-            long_name: long_name.to_string(),
-            hint: "".to_string(),
-            desc: desc.to_string(),
+            short_name: short_name,
+            long_name: long_name,
+            hint: "",
+            desc: desc,
             hasarg: No,
             occur: Optional,
         });
@@ -245,13 +245,18 @@ impl Options {
     /// let matches = opts.parse(&["-v", "--verbose"]).unwrap();
     /// assert_eq!(2, matches.opt_count("v"));
     /// ```
-    pub fn optflagmulti(&mut self, short_name: &str, long_name: &str, desc: &str) -> &mut Options {
+    pub fn optflagmulti(
+        &mut self,
+        short_name: &'a str,
+        long_name: &'a str,
+        desc: &'a str,
+    ) -> &mut Self {
         validate_names(short_name, long_name);
         self.grps.push(OptGroup {
-            short_name: short_name.to_string(),
-            long_name: long_name.to_string(),
-            hint: "".to_string(),
-            desc: desc.to_string(),
+            short_name: short_name,
+            long_name: long_name,
+            hint: "",
+            desc: desc,
             hasarg: No,
             occur: Multi,
         });
@@ -281,17 +286,17 @@ impl Options {
     /// ```
     pub fn optflagopt(
         &mut self,
-        short_name: &str,
-        long_name: &str,
-        desc: &str,
-        hint: &str,
-    ) -> &mut Options {
+        short_name: &'a str,
+        long_name: &'a str,
+        desc: &'a str,
+        hint: &'a str,
+    ) -> &mut Self {
         validate_names(short_name, long_name);
         self.grps.push(OptGroup {
-            short_name: short_name.to_string(),
-            long_name: long_name.to_string(),
-            hint: hint.to_string(),
-            desc: desc.to_string(),
+            short_name: short_name,
+            long_name: long_name,
+            hint: hint,
+            desc: desc,
             hasarg: Maybe,
             occur: Optional,
         });
@@ -323,17 +328,17 @@ impl Options {
     /// ```
     pub fn optmulti(
         &mut self,
-        short_name: &str,
-        long_name: &str,
-        desc: &str,
-        hint: &str,
-    ) -> &mut Options {
+        short_name: &'a str,
+        long_name: &'a str,
+        desc: &'a str,
+        hint: &'a str,
+    ) -> &mut Self {
         validate_names(short_name, long_name);
         self.grps.push(OptGroup {
-            short_name: short_name.to_string(),
-            long_name: long_name.to_string(),
-            hint: hint.to_string(),
-            desc: desc.to_string(),
+            short_name: short_name,
+            long_name: long_name,
+            hint: hint,
+            desc: desc,
             hasarg: Yes,
             occur: Multi,
         });
@@ -364,17 +369,17 @@ impl Options {
     /// ```
     pub fn optopt(
         &mut self,
-        short_name: &str,
-        long_name: &str,
-        desc: &str,
-        hint: &str,
-    ) -> &mut Options {
+        short_name: &'a str,
+        long_name: &'a str,
+        desc: &'a str,
+        hint: &'a str,
+    ) -> &mut Self {
         validate_names(short_name, long_name);
         self.grps.push(OptGroup {
-            short_name: short_name.to_string(),
-            long_name: long_name.to_string(),
-            hint: hint.to_string(),
-            desc: desc.to_string(),
+            short_name: short_name,
+            long_name: long_name,
+            hint: hint,
+            desc: desc,
             hasarg: Yes,
             occur: Optional,
         });
@@ -407,17 +412,17 @@ impl Options {
     /// ```
     pub fn reqopt(
         &mut self,
-        short_name: &str,
-        long_name: &str,
-        desc: &str,
-        hint: &str,
-    ) -> &mut Options {
+        short_name: &'a str,
+        long_name: &'a str,
+        desc: &'a str,
+        hint: &'a str,
+    ) -> &mut Self {
         validate_names(short_name, long_name);
         self.grps.push(OptGroup {
-            short_name: short_name.to_string(),
-            long_name: long_name.to_string(),
-            hint: hint.to_string(),
-            desc: desc.to_string(),
+            short_name: short_name,
+            long_name: long_name,
+            hint: hint,
+            desc: desc,
             hasarg: Yes,
             occur: Req,
         });
@@ -432,7 +437,7 @@ impl Options {
     ///
     /// Returns `Err(Fail)` on failure: use the `Debug` implementation of `Fail`
     /// to display information about it.
-    pub fn parse<C: IntoIterator>(&self, args: C) -> Result
+    pub fn parse<C: IntoIterator>(&self, args: C) -> Result<'a>
     where
         C::Item: AsRef<OsStr>,
     {
@@ -615,7 +620,7 @@ impl Options {
     }
 
     /// Derive usage items from a set of options.
-    fn usage_items<'a>(&'a self) -> Box<dyn Iterator<Item = String> + 'a> {
+    fn usage_items<'b>(&'b self) -> Box<dyn Iterator<Item = String> + 'b> {
         let desc_sep = format!("\n{}", repeat(" ").take(24).collect::<String>());
 
         let any_short = self.grps.iter().any(|optref| !optref.short_name.is_empty());
@@ -721,10 +726,10 @@ pub enum ParsingStyle {
 
 /// Name of an option. Either a string or a single char.
 #[derive(Clone, Debug, PartialEq, Eq)]
-enum Name {
+enum Name<'a> {
     /// A string representing the long name of an option.
     /// For example: "help"
-    Long(String),
+    Long(&'a str),
     /// A char representing the short name of an option.
     /// For example: 'h'
     Short(char),
@@ -754,29 +759,29 @@ pub enum Occur {
 
 /// A description of a possible option.
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct Opt {
+struct Opt<'a> {
     /// Name of the option
-    name: Name,
+    name: Name<'a>,
     /// Whether it has an argument
     hasarg: HasArg,
     /// How often it can occur
     occur: Occur,
     /// Which options it aliases
-    aliases: Vec<Opt>,
+    aliases: Vec<Opt<'a>>,
 }
 
 /// One group of options, e.g., both `-h` and `--help`, along with
 /// their shared description and properties.
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct OptGroup {
+struct OptGroup<'a> {
     /// Short name of the option, e.g. `h` for a `-h` option
-    short_name: String,
+    short_name: &'a str,
     /// Long name of the option, e.g. `help` for a `--help` option
-    long_name: String,
+    long_name: &'a str,
     /// Hint for argument, e.g. `FILE` for a `-o FILE` option
-    hint: String,
+    hint: &'a str,
     /// Description for usage help text
-    desc: String,
+    desc: &'a str,
     /// Whether option has an argument
     hasarg: HasArg,
     /// How often it can occur
@@ -793,9 +798,9 @@ enum Optval {
 /// The result of checking command line arguments. Contains a vector
 /// of matches and a vector of free strings.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Matches {
+pub struct Matches<'a> {
     /// Options that matched
-    opts: Vec<Opt>,
+    opts: Vec<Opt<'a>>,
     /// Values of the Options that matched and their positions
     vals: Vec<Vec<(usize, Optval)>>,
 
@@ -826,14 +831,14 @@ pub enum Fail {
 impl Error for Fail {}
 
 /// The result of parsing a command line with a set of options.
-pub type Result = result::Result<Matches, Fail>;
+pub type Result<'a> = result::Result<Matches<'a>, Fail>;
 
-impl Name {
-    fn from_str(nm: &str) -> Name {
+impl<'a> Name<'a> {
+    fn from_str(nm: &'a str) -> Name<'a> {
         if nm.len() == 1 {
             Short(nm.as_bytes()[0] as char)
         } else {
-            Long(nm.to_string())
+            Long(nm)
         }
     }
 
@@ -845,10 +850,10 @@ impl Name {
     }
 }
 
-impl OptGroup {
+impl<'a> OptGroup<'a> {
     /// Translate OptGroup into Opt.
     /// (Both short and long names correspond to different Opts).
-    fn long_to_short(&self) -> Opt {
+    fn long_to_short(&self) -> Opt<'a> {
         let OptGroup {
             short_name,
             long_name,
@@ -887,7 +892,7 @@ impl OptGroup {
     }
 }
 
-impl Matches {
+impl<'a> Matches<'a> {
     fn opt_vals(&self, nm: &str) -> Vec<(usize, Optval)> {
         match find_opt(&self.opts, &Name::from_str(nm)) {
             Some(id) => self.vals[id].clone(),
