@@ -21,3 +21,8 @@ log = "0.4"
 default = ["unicode"]
 rustc-dep-of-std = ["std", "core"]
 unicode = ["dep:unicode-width"]
+
+[workspace]
+members = ["getopts-test"]
+default-members = [".", "getopts-test"]
+resolver = "2"
